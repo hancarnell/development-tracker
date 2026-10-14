@@ -426,9 +426,21 @@ output { font-weight: 600; min-width: 74px; text-align: right; }
     }
   };
 
+  var team = {
+    list: async function () {
+      var r = await S.sb.from('profiles').select('id,email,role,created_at');
+      if (r.error) throw err(r.error);
+      return r.data;
+    },
+    setRole: async function (id, role) {
+      var r = await S.sb.from('profiles').update({ role: role }).eq('id', id).select('id');
+      if (r.error) throw err(r.error);
+      if (!r.data || !r.data.length) throw new Error('Not allowed.');
+    }
+  };
   window.claude = { use: async function (name) {
     await readyP;
-    return name === 'db' ? db : name === 'user' ? user : name === 'downloads' ? downloads : null;
+    return name === 'db' ? db : name === 'user' ? user : name === 'downloads' ? downloads : name === 'team' && S.role === 'admin' ? team : null;
   } };
 
   /* ---------- start ---------- */
@@ -709,6 +721,7 @@ const ICONS = {
   capital: '<svg viewBox="0 0 16 16"><path d="M2 6l6-3 6 3M3.5 13V7.5M8 13V7.5M12.5 13V7.5M2 13h12"/></svg>',
   margin: '<svg viewBox="0 0 16 16"><path d="M2 12l4-4 3 3 5-6"/><path d="M10.5 5H14v3.5"/></svg>',
   checks: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M5.2 8.2l2 2 3.6-4"/></svg>',
+  team: '<svg viewBox="0 0 16 16"><circle cx="6" cy="5.5" r="2.3"/><path d="M2 13c.4-2.4 2-3.6 4-3.6s3.6 1.2 4 3.6"/><circle cx="11.6" cy="6" r="1.7"/><path d="M11.4 9.6c1.6.1 2.4 1.2 2.7 3"/></svg>',
   history: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/></svg>'
 };
 const NAV = [
@@ -1299,7 +1312,7 @@ function curveChart(s, w) {
 function renderNav() {
   const sum = state.loaded.p ? summary() : null;
   const nIssues = sum ? E.checks(sum, projectsSorted(), capitalSorted()).filter(c => !c.ok).length : 0;
-  $('#nav').innerHTML = NAV.map(n => '<button class="nav-btn" data-go="' + n[0] + '"' + (n[0] === viewName ? ' aria-current="page"' : '') + '>' + ICONS[n[0] === 'schedule' ? 'schedule' : n[0]] + '<span>' + n[1] + '</span>' + (n[0] === 'checks' && nIssues ? '<span class="badge" aria-label="' + nIssues + ' checks to review">' + nIssues + '</span>' : '') + '</button>').join('');
+  $('#nav').innerHTML = NAV.map(n => '<button class="nav-btn" data-go="' + n[0] + '"' + (n[0] === viewName ? ' aria-current="page"' : '') + '>' + ICONS[n[0] === 'schedule' ? 'schedule' : n[0]] + '<span>' + n[1] + '</span>' + (n[0] === 'checks' && nIssues ? '<span class="badge" aria-label="' + nIssues + ' checks to review">' + nIssues + '</span>' : '') + (n[0] === 'team' && state.pending ? '<span class="badge" aria-label="' + state.pending + ' people waiting">' + state.pending + '</span>' : '') + '</button>').join('');
   const sy = $('#sync');
   if (state.dbState !== 'ready') { sy.className = 'sync off'; sy.innerHTML = '<i></i><span>Not connected</span>'; }
   else if (state.readOnly) { sy.className = 'sync off'; sy.innerHTML = '<i></i><span>View only</span>'; }
@@ -1313,7 +1326,7 @@ function renderAll() {
   if (state.dbState === 'connecting') { host.innerHTML = dimBlock('Loading the shared plan', 'Connecting to the team data.'); charts = []; return; }
   if (state.dbState !== 'ready') { host.innerHTML = dimBlock('Sign in to see the plan', 'This planner keeps its data in a shared team store. Sign in to view and edit the projects.'); charts = []; return; }
   if (!(state.loaded.p && state.loaded.c && state.loaded.s)) { host.innerHTML = dimBlock('Loading the shared plan', 'Fetching projects and capital.'); charts = []; return; }
-  if (!state.projects.length && viewName !== 'projects' && viewName !== 'capital' && viewName !== 'checks' && viewName !== 'history') {
+  if (!state.projects.length && viewName !== 'projects' && viewName !== 'capital' && viewName !== 'checks' && viewName !== 'history' && viewName !== 'team') {
     host.innerHTML = dimBlock('No projects yet', 'The plan is empty. Add a project and the dashboard fills in.', state.readOnly ? '' : '<button class="btn primary" data-act="add-project">Add the first project</button>'); charts = []; return;
   }
   // preserve scroll positions and focus
@@ -1329,9 +1342,11 @@ function renderAll() {
   else if (viewName === 'capital') html = viewCapital(sum);
   else if (viewName === 'margin') html = viewMargin(sum);
   else if (viewName === 'history') html = viewHistory();
+  else if (viewName === 'team') html = viewTeam();
   else html = viewChecks(sum);
   host.innerHTML = html;
   if (viewName === 'history') loadHistory();
+  if (viewName === 'team') loadTeam();
   if (viewName === 'schedule') { $('#scen-results').innerHTML = scenResults(); }
   $$('[data-scroll]', host).forEach(el => { const s = scrolls[el.dataset.scroll]; if (s) { el.scrollLeft = s[0]; el.scrollTop = s[1]; } });
   runCharts();
@@ -1582,6 +1597,48 @@ async function loadHistory() {
   } catch (e) { console.error(e); if ($('#hist')) $('#hist').innerHTML = dimBlock('Could not load history', 'Try Refresh in a moment.'); }
 }
 
+
+/* =====================================================================
+   TEAM (administrators approve people and set roles)
+   ===================================================================== */
+const ROLE_NAMES = { pending: 'No access yet', viewer: 'Viewer', editor: 'Editor', admin: 'Admin' };
+let teamRows = null, teamErr = null;
+function viewTeam() {
+  return head('Team', 'Approve people who have created an account and choose what each can do.',
+    '<button class="btn" id="team-refresh">Refresh</button>') +
+    '<div class="card"><p class="sub" style="margin:0">Viewer: can see everything, changes nothing. Editor: can change projects, capital and settings. Admin: an editor who can also manage this page. A new person sees a waiting screen until you give them a role, then they reload the page.</p></div>' +
+    '<div id="team"><div class="empty-chart">Loading the team.</div></div>';
+}
+function drawTeam() {
+  const host = $('#team'); if (!host) return;
+  if (teamErr) { host.innerHTML = dimBlock('Could not load the team', teamErr); return; }
+  if (!teamRows) return;
+  const order = { pending: 0, admin: 1, editor: 2, viewer: 3 };
+  const rows = teamRows.slice().sort((a, b) => (order[a.role] - order[b.role]) || String(a.email).localeCompare(String(b.email)));
+  host.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Joined</th><th>Access</th></tr></thead><tbody>' + rows.map(r => {
+    const me = r.id === state.uid;
+    const opts = ['pending', 'viewer', 'editor', 'admin'].map(k => '<option value="' + k + '"' + (k === r.role ? ' selected' : '') + '>' + ROLE_NAMES[k] + '</option>').join('');
+    return '<tr' + (r.role === 'pending' ? ' style="background:var(--surface2)"' : '') + '><td>' + esc(r.email) + (me ? '<span class="tag">You</span>' : '') + (r.role === 'pending' ? '<span class="tag">Waiting</span>' : '') + '</td><td>' +
+      esc(new Date(r.created_at).toLocaleDateString([], { dateStyle: 'medium' })) + '</td><td><select class="in" style="appearance:auto;-webkit-appearance:menulist;border:1px solid var(--axis);border-radius:8px;padding:6px 8px;background:var(--surface)" data-team="' + esc(r.id) + '" aria-label="Access for ' + esc(r.email) + '"' + (me ? ' disabled title="You cannot change your own access"' : '') + '>' + opts + '</select></td></tr>';
+  }).join('') + '</tbody></table></div>';
+}
+async function loadTeam() {
+  const btn = $('#team-refresh'); if (btn && !btn._bound) { btn._bound = true; btn.addEventListener('click', loadTeam); }
+  if (teamRows) drawTeam();
+  try {
+    teamRows = await state.team.list(); teamErr = null;
+    state.pending = teamRows.filter(r => r.role === 'pending').length;
+    if (viewName === 'team') { drawTeam(); renderNav(); }
+  } catch (e) { console.error(e); teamErr = 'Try Refresh in a moment.'; drawTeam(); }
+}
+document.addEventListener('change', async e => {
+  const el = e.target.closest ? e.target.closest('select[data-team]') : null; if (!el) return;
+  const id = el.getAttribute('data-team'), role = el.value;
+  try { await state.team.setRole(id, role); toast('Access updated.'); }
+  catch (err) { console.error(err); toast((err && err.message) || 'Could not change access.'); }
+  loadTeam();
+});
+
 /* =====================================================================
    BOOT
    ===================================================================== */
@@ -1593,6 +1650,7 @@ async function boot() {
   try { user = await claude.use('user'); } catch (e) {}
   if (!db) { state.dbState = 'missing'; renderAll(); return; }
   state.db = db; state.dbState = 'ready';
+  try { const tm = await claude.use('team'); if (tm) { state.team = tm; NAV.push(['team', 'Team']); state.team.list().then(r => { state.pending = r.filter(x => x.role === 'pending').length; renderNav(); }).catch(() => {}); } } catch (e) {}
   try { if (user) { state.uid = await user.id(); const cw = await user.can('data.write'); state.readOnly = cw === false; } } catch (e) {}
   const err = e => { console.error(e); if (e && e.code === 'revoked') { state.dbState = 'missing'; renderAll(); } };
   db.collection('projects').onSnapshot(snap => { state.projects = snap.docs.map(d => Object.assign({}, d.data(), { id: d.id })); state.loaded.p = true; scheduleRender(); }, err);
