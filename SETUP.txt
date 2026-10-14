@@ -1,0 +1,69 @@
+VALIANT CONSTRUCTION PLANNER: SETUP (about 20 minutes)
+
+What is in this folder
+  index.html   the whole app (no build step)
+  config.js    your Supabase address and public key
+  schema.sql   creates the database, logins, roles, change history, live updates
+  seed.sql     loads your current 24 projects, 9 capital events and settings
+
+STEP 1. config.js (already filled in with your project address and anon key)
+  Nothing to do here unless you move to a different Supabase project.
+  If you ever need to replace it:   Supabase dashboard > Project Settings > API. Copy the "anon public" key
+  (the long one that starts with eyJ, or sb_publishable_). Paste it over YOUR-ANON-KEY.
+  Never use the "service_role" or "secret" key here. The anon key is safe to be public
+  because the database rules in schema.sql decide who can see or change anything.
+
+STEP 2. Create the database
+  Supabase dashboard > SQL Editor > New query.
+  Paste all of schema.sql, click Run. Then paste all of seed.sql, click Run.
+  Do both BEFORE anyone signs up.
+
+STEP 3. Check the login settings
+  Authentication > Providers > Email: leave Email on.
+  Authentication > URL Configuration: set Site URL to the address of your site once you have it (Step 4).
+  Confirmation emails come from Supabase's built-in sender, which is rate limited. If your team is
+  more than a handful of people, add your own email sender (Authentication > SMTP Settings).
+
+STEP 4. Put the site online on Render
+  Render hosts static sites from a Git repository (there is no drag-and-drop upload).
+  a. Create a new GitHub repository (private is fine) and upload the contents of this folder to its
+     top level: index.html, config.js, render.yaml and the rest. On github.com: Add file > Upload files.
+  b. In Render: New > Static Site > connect that repository.
+     Build Command: leave empty (or type  echo ok ).
+     Publish Directory:  .   (a single dot)
+     Click Create Static Site. Or choose New > Blueprint and Render reads render.yaml for you.
+  c. Render gives you an address like https://valiant-planner.onrender.com.
+     Set Site URL in Step 3 to that address. You can add your own domain in Render > Settings > Custom Domains.
+  Every time you change a file in the repository, Render redeploys automatically.
+
+STEP 5. Create your account first
+  Open the site, enter your email and a password, click Create account, confirm the email, sign in.
+  The FIRST account created becomes the administrator. Everyone after starts as "pending" and sees
+  nothing until you approve them.
+
+STEP 6. Approve your team
+  Have each person create an account. Then in Supabase: Table Editor > profiles.
+  Change each person's role:
+    viewer   can see everything, cannot change anything
+    editor   can change projects, capital and settings
+    admin    editor, plus can change other people's roles
+  They need to reload the page after you change the role.
+
+WHAT IT REMEMBERS
+  Every edit is saved to the database straight away and shows up live for everyone who has the site open.
+  The History tab lists every change: who, when, what, and the old and new value.
+
+BACKUPS
+  Supabase > Database > Backups. Free projects do not get automatic backups, so also use the app's
+  Export CSV buttons now and then, or upgrade the project to Pro for daily backups.
+  Free projects also pause after a week with no activity; opening the dashboard unpauses them.
+
+SQUARESPACE
+  Easiest is a button or link on your Squarespace page pointing to the site.
+  Embedding in a code block with an iframe also works, but sign-in inside an iframe can be unreliable
+  in some browsers, so a link is the safer choice.
+
+KNOWN LIMITS
+  Roles are changed in the Supabase table editor, not inside the app.
+  Two people editing the same field at the same moment: the last save wins.
+  The what-if sliders and per-project shifts are not saved; they reset when the page reloads.

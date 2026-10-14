@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: valiant-planner
+    runtime: static
+    buildCommand: echo ok
+    staticPublishPath: .
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

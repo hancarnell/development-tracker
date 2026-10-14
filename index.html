@@ -1,0 +1,1609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Valiant Construction Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+<style>
+/* Layout concept: left section rail + one working column. Summary first, detail below.
+   Brand: Valiant black, bronze, pale gold, ivory. Chart hues come from a validated categorical set. */
+:root {
+  --bg: #F3F1EC;
+  --surface: #FBFAF7;
+  --surface2: #EAE7E1;
+  --ink: #1D1D1D;
+  --ink2: #55524B;
+  --muted: #6F6B62;
+  --line: #E2DED5;
+  --axis: #C9C3B6;
+  --accent: #7F6B42;
+  --accent-ink: #FFFDF8;
+  --gold: #AD9978;
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #898781;
+  --good: #0ca30c;
+  --good-ink: #006300;
+  --warn: #fab219;
+  --warn-ink: #8a5a00;
+  --bad: #d03b3b;
+  --bad-ink: #a82727;
+  --focus: #2a78d6;
+  --tip-bg: #1D1D1D;
+  --tip-ink: #F3F1EC;
+  --tip-dim: #B9B5A9;
+  --font: Poppins, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121211; --surface: #1D1D1D; --surface2: #2A2927; --ink: #F0EEE8; --ink2: #C3C0B6; --muted: #A09C90;
+    --line: #2E2D2A; --axis: #44423D; --accent: #AD9978; --accent-ink: #1D1D1D; --gold: #AD9978;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #898781;
+    --good-ink: #0ca30c; --warn-ink: #fab219; --bad: #e66767; --bad-ink: #e66767; --focus: #6da7ec;
+    --tip-bg: #F0EEE8; --tip-ink: #1D1D1D; --tip-dim: #55524B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121211; --surface: #1D1D1D; --surface2: #2A2927; --ink: #F0EEE8; --ink2: #C3C0B6; --muted: #A09C90;
+  --line: #2E2D2A; --axis: #44423D; --accent: #AD9978; --accent-ink: #1D1D1D; --gold: #AD9978;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #898781;
+  --good-ink: #0ca30c; --warn-ink: #fab219; --bad: #e66767; --bad-ink: #e66767; --focus: #6da7ec;
+  --tip-bg: #F0EEE8; --tip-ink: #1D1D1D; --tip-dim: #55524B;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 13px/1.5 var(--font);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+button, input, select { font: inherit; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.shell { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; max-width: 1380px; margin: 0 auto; padding-block: 20px 48px; }
+.nav { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; display: flex; flex-direction: column; gap: 22px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand .mark { width: 30px; height: 30px; border-radius: 6px; background: var(--ink); color: var(--gold); display: grid; place-items: center; font-weight: 600; font-size: 15px; flex: none; }
+.brand b { display: block; font-weight: 600; font-size: 14px; line-height: 1.2; }
+.brand small { display: block; color: var(--muted); font-size: 11px; line-height: 1.3; }
+.nav-items { display: flex; flex-direction: column; gap: 2px; }
+.nav-btn { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; background: transparent; border-radius: 8px; cursor: pointer; text-align: left; color: var(--ink2); font-weight: 500; }
+.nav-btn svg { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.nav-btn:hover { background: var(--surface2); color: var(--ink); }
+.nav-btn[aria-current="page"] { background: var(--ink); color: var(--bg); }
+.nav-btn .badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--warn); color: #1D1D1D; font-size: 11px; font-weight: 600; display: grid; place-items: center; }
+.sync { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.sync i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
+.sync.busy i { background: var(--warn); }
+.sync.off i { background: var(--s4); }
+
+.main { min-width: 0; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.head h1 { font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--ink2); margin-top: 4px; max-width: 70ch; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--axis); background: var(--surface); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--surface2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.small { padding: 4px 9px; font-size: 12px; }
+.btn.danger { border-color: var(--bad); color: var(--bad-ink); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.card + .card, .stack > * + * { margin-top: 16px; }
+.card h2 { font-size: 15px; font-weight: 600; }
+.card .lead { color: var(--ink2); margin-top: 2px; font-size: 12px; }
+.card-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.eyebrow { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+
+.top-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+.hero { display: flex; flex-direction: column; gap: 10px; }
+.hero-num { font-size: 56px; line-height: 1; font-weight: 600; letter-spacing: -0.02em; }
+.hero-line { color: var(--ink2); font-size: 14px; }
+.hero-line strong { color: var(--ink); font-weight: 600; }
+.pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 500; border: 1px solid var(--line); background: var(--surface2); width: fit-content; }
+.pill svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pill.good { color: var(--good-ink); }
+.pill.warn { color: var(--warn-ink); }
+.pill.bad { color: var(--bad-ink); }
+.meter { position: relative; height: 10px; border-radius: 5px; background: var(--surface2); margin: 14px 0 22px; }
+.meter .fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--accent); }
+.meter .mark { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); }
+.meter .mark span { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--ink2); white-space: nowrap; }
+.hero-sub { color: var(--ink2); font-size: 12px; display: flex; gap: 6px 18px; flex-wrap: wrap; }
+.hero-sub b { color: var(--ink); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; text-align: left; display: block; width: 100%; }
+button.tile { cursor: pointer; }
+button.tile:hover { background: var(--surface2); }
+.t-label { color: var(--ink2); font-size: 12px; }
+.t-val { font-size: 26px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; margin: 2px 0; }
+.t-sub { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.t-val.dim { color: var(--muted); font-size: 18px; font-weight: 500; }
+
+.two { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+.two > .card + .card { margin-top: 0; }
+.legend { display: flex; gap: 6px 16px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend .ln { width: 16px; height: 2px; display: inline-block; }
+.chart { width: 100%; min-height: 120px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--font); }
+.chart .tick { fill: var(--muted); font-size: 11px; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .axis { stroke: var(--axis); stroke-width: 1; }
+.chart .vlabel { fill: var(--ink); font-size: 11px; font-weight: 500; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover, .chart .hit:focus { fill: var(--ink); fill-opacity: .06; outline: none; }
+.chart .note { fill: var(--ink2); font-size: 11px; }
+.empty-chart { color: var(--muted); padding: 24px 0; }
+
+.hb { display: grid; grid-template-columns: minmax(90px, 1.2fr) minmax(0, 2fr) auto; gap: 10px; align-items: center; padding: 5px 0; }
+.hb-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.hb-t { height: 10px; background: transparent; position: relative; }
+.hb-f { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; }
+.hb-v { font-weight: 500; min-width: 54px; text-align: right; }
+.hb-sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; }
+
+.att { display: flex; flex-direction: column; }
+.att-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); }
+.att-row:first-child { border-top: 0; padding-top: 0; }
+.att-ic { width: 18px; height: 18px; margin-top: 2px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.att-ic.warn { color: var(--warn-ink); } .att-ic.good { color: var(--good-ink); } .att-ic.info { color: var(--muted); }
+.att-t { font-weight: 500; }
+.att-d { color: var(--ink2); font-size: 12px; margin-top: 1px; overflow-wrap: anywhere; }
+
+.filters { display: flex; gap: 10px 14px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 12px; color: var(--ink2); }
+.field .hint { font-size: 11px; color: var(--muted); }
+.ctl { border: 1px solid var(--axis); background: var(--surface); border-radius: 8px; padding: 7px 10px; min-width: 0; width: 100%; }
+.ctl:disabled { opacity: .6; }
+.filters .ctl { width: auto; }
+.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--ink2); }
+.chk input { width: 15px; height: 15px; accent-color: var(--accent); }
+
+.tbl-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); max-width: 100%; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; }
+th, td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--surface2); font-size: 11px; font-weight: 600; letter-spacing: .03em; color: var(--ink2); z-index: 2; padding: 9px 8px; }
+th.r, td.r { text-align: right; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 10px; }
+tr:last-child td { border-bottom: 0; }
+tr.dim td { color: var(--muted); }
+tr.total td { font-weight: 600; background: var(--surface2); border-top: 1px solid var(--axis); }
+td.stick, th.stick { position: sticky; left: 0; background: var(--surface); z-index: 1; border-right: 1px solid var(--line); }
+th.stick { background: var(--surface2); z-index: 3; }
+tr.total td.stick { background: var(--surface2); }
+.in { border: 1px solid transparent; background: transparent; padding: 5px 6px; border-radius: 6px; width: 100%; min-width: 0; }
+.in:hover { border-color: var(--axis); }
+.in:focus { border-color: var(--focus); background: var(--surface); outline: none; }
+.in:disabled { opacity: 1; color: var(--ink); -webkit-text-fill-color: currentColor; }
+.in.r { text-align: right; }
+select.in { appearance: none; -webkit-appearance: none; padding-right: 6px; cursor: pointer; }
+select.in:disabled { cursor: default; }
+td.warncell { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface2); color: var(--ink2); margin-left: 6px; }
+.x { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; font-size: 12px; }
+.x:hover { background: var(--surface2); color: var(--bad-ink); }
+.x.sure { background: var(--bad); color: #fff; }
+.w-name { min-width: 210px; } .w-cat { min-width: 118px; } .w-status { min-width: 160px; } .w-money { min-width: 112px; } .w-pct { min-width: 66px; }
+.w-date { min-width: 128px; } .w-sm { min-width: 96px; } .w-notes { min-width: 240px; } .w-id { min-width: 66px; }
+input[type="date"].in { padding: 4px 6px; }
+
+.range-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+output { font-weight: 600; min-width: 74px; text-align: right; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px 18px; }
+.callout { border: 1px solid var(--line); background: var(--surface2); border-radius: 10px; padding: 14px 16px; color: var(--ink2); }
+.callout b { color: var(--ink); }
+.delta.good { color: var(--good-ink); } .delta.bad { color: var(--bad-ink); }
+.muted { color: var(--muted); }
+.note-txt { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.empty { text-align: center; padding: 56px 16px; }
+.empty h2 { font-size: 18px; margin-bottom: 6px; }
+.empty p { color: var(--ink2); max-width: 54ch; margin: 0 auto 16px; }
+.scroll-x { overflow-x: auto; max-width: 100%; }
+
+.tip { position: fixed; z-index: 50; pointer-events: none; background: var(--tip-bg); color: var(--tip-ink); border-radius: 8px; padding: 9px 11px; font-size: 12px; min-width: 150px; max-width: 280px; box-shadow: 0 6px 20px rgba(0,0,0,.22); }
+.tt-h { font-weight: 600; margin-bottom: 5px; }
+.tt-r { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 1px 0; }
+.tt-k { width: 12px; height: 3px; border-radius: 2px; }
+.tt-n { color: var(--tip-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-v { font-weight: 600; text-align: right; }
+.tt-f { border-top: 1px solid color-mix(in srgb, var(--tip-ink) 22%, transparent); margin-top: 5px; padding-top: 5px; color: var(--tip-dim); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); z-index: 60; background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 8px; font-size: 13px; max-width: calc(100vw - 32px); }
+
+@media (max-width: 1000px) {
+  .top-grid, .two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-block: 12px 40px; }
+  .nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; flex-direction: row; align-items: center; gap: 8px; background: var(--bg); padding: 8px 0; margin-inline: 0; border-bottom: 1px solid var(--line); }
+  .brand small { display: none; }
+  .brand b { display: none; }
+  .nav-items { flex-direction: row; overflow-x: auto; flex: 1; min-width: 0; gap: 4px; scrollbar-width: none; }
+  .nav-btn { white-space: nowrap; padding: 7px 10px; }
+  .sync span { display: none; }
+  .hero-num { font-size: 44px; }
+  .head h1 { font-size: 21px; }
+}
+@media (max-width: 520px) {
+  .tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .t-val { font-size: 21px; }
+  .card { padding: 14px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .meter .fill { transition: width .4s ease; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="nav" aria-label="Sections">
+    <div class="brand"><span class="mark">V</span><div><b>Valiant Group</b><small>Construction planner</small></div></div>
+    <div class="nav-items" id="nav"></div>
+    <div class="sync off" id="sync" role="status"><i></i><span>Connecting</span></div>
+  </nav>
+  <main class="main"><div id="view" aria-live="polite"></div></main>
+</div>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+/* Supabase adapter: gives the planner the same small db/user/downloads surface it had inside Claude.
+   Tables: projects, capital, settings (id text, data jsonb), plus history and profiles. */
+(function () {
+  window.VALIANT_BACKEND = true;
+  var cfg = window.VALIANT_CONFIG || {};
+  var resolveReady, readyP = new Promise(function (r) { resolveReady = r; });
+  var S = { sb: null, session: null, role: null };
+
+  /* ---------- sign-in overlay ---------- */
+  var ov = document.createElement('div');
+  ov.id = 'auth';
+  ov.innerHTML = '<style>#auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;font-family:var(--font);color:var(--ink)}' +
+    '#auth .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px;width:100%;max-width:380px}' +
+    '#auth h1{font-size:20px;margin:0 0 4px}#auth p{color:var(--ink2);margin:0 0 16px;font-size:13px;line-height:1.5}' +
+    '#auth label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}' +
+    '#auth input{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--axis);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}' +
+    '#auth .row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}#auth .msg{margin-top:14px;font-size:13px;color:var(--ink2)}#auth .msg.err{color:var(--bad-ink)}</style>' +
+    '<div class="card"><h1>Valiant Construction Planner</h1><div id="auth-body"></div></div>';
+  function mountOverlay() { if (!ov.isConnected) document.body.appendChild(ov); }
+  var body = function () { return ov.querySelector('#auth-body'); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  function showMessage(title, text, withSignOut) {
+    mountOverlay();
+    body().innerHTML = '<p><strong>' + esc(title) + '</strong><br>' + esc(text) + '</p>' + (withSignOut ? '<div class="row"><button class="btn" id="a-out">Sign out</button></div>' : '');
+    var b = body().querySelector('#a-out'); if (b) b.onclick = signOut;
+  }
+  function showForm(note) {
+    mountOverlay();
+    body().innerHTML = '<p>Sign in with your work email to see and edit the shared plan.</p>' +
+      '<form id="a-form"><label for="a-email">Email</label><input id="a-email" type="email" autocomplete="username" required>' +
+      '<label for="a-pw">Password</label><input id="a-pw" type="password" autocomplete="current-password" minlength="8" required>' +
+      '<div class="row"><button class="btn primary" type="submit" id="a-in">Sign in</button><button class="btn" type="button" id="a-up">Create account</button></div></form>' +
+      '<div class="msg" id="a-msg" role="status">' + esc(note || '') + '</div>';
+    var msg = function (t, bad) { var m = body().querySelector('#a-msg'); m.textContent = t; m.className = 'msg' + (bad ? ' err' : ''); };
+    var creds = function () { return { email: body().querySelector('#a-email').value.trim(), password: body().querySelector('#a-pw').value }; };
+    body().querySelector('#a-form').onsubmit = function (e) {
+      e.preventDefault(); msg('Signing in…');
+      S.sb.auth.signInWithPassword(creds()).then(function (r) { if (r.error) msg(r.error.message, true); });
+    };
+    body().querySelector('#a-up').onclick = function () {
+      var c = creds(); if (!c.email || c.password.length < 8) { msg('Enter your email and a password of at least 8 characters.', true); return; }
+      msg('Creating account…');
+      S.sb.auth.signUp(c).then(function (r) {
+        if (r.error) { msg(r.error.message, true); return; }
+        if (!r.data.session) msg('Check your email to confirm the account, then sign in here.');
+      });
+    };
+  }
+  function signOut() { S.sb.auth.signOut().then(function () { location.reload(); }); }
+
+  /* ---------- session and role ---------- */
+  var settled = false;
+  async function enter(session) {
+    if (!session) { showForm(); return; }
+    S.session = session;
+    var r = await S.sb.from('profiles').select('role,email').eq('id', session.user.id).maybeSingle();
+    if (r.error || !r.data) { showMessage('Account not ready', 'We could not load your profile. Try again in a moment.', true); return; }
+    S.role = r.data.role;
+    if (['viewer', 'editor', 'admin'].indexOf(S.role) < 0) {
+      showMessage('Waiting for approval', 'Your account (' + r.data.email + ') is created. An administrator needs to give it access before you can see the plan.', true); return;
+    }
+    if (settled) return; settled = true;
+    if (ov.isConnected) ov.remove();
+    addSignOutButton(r.data.email);
+    resolveReady();
+  }
+  function addSignOutButton(email) {
+    var go = function () {
+      var sy = document.getElementById('sync'); if (!sy || document.getElementById('signout')) return;
+      var b = document.createElement('button'); b.id = 'signout'; b.className = 'btn small'; b.textContent = 'Sign out'; b.title = email;
+      b.style.marginTop = '10px'; b.onclick = signOut; sy.parentNode.insertBefore(b, sy.nextSibling);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  }
+
+  /* ---------- db surface ---------- */
+  function snapOf(map) {
+    var docs = Array.from(map.entries()).map(function (e) { return { id: e[0], data: function () { return e[1]; } }; });
+    return { docs: docs, exists: docs.length > 0 };
+  }
+  function Watcher(table) {
+    var w = { table: table, map: new Map(), subs: [], loaded: null };
+    w.emit = function () { w.subs.forEach(function (s) { s(); }); };
+    w.load = async function () {
+      var r = await S.sb.from(table).select('id,data');
+      if (r.error) throw r.error;
+      w.map = new Map(r.data.map(function (x) { return [x.id, x.data]; }));
+      w.emit();
+    };
+    w.start = function () {
+      if (w.loaded) return w.loaded;
+      w.loaded = w.load();
+      S.sb.channel('rt-' + table).on('postgres_changes', { event: '*', schema: 'public', table: table }, function (p) {
+        if (p.eventType === 'DELETE') w.map.delete(p.old.id); else w.map.set(p.new.id, p.new.data);
+        w.emit();
+      }).subscribe(function (status) { if (status === 'SUBSCRIBED' && w.synced) w.load().catch(console.error); if (status === 'SUBSCRIBED') w.synced = true; });
+      return w.loaded;
+    };
+    return w;
+  }
+  var W = {};
+  var watcher = function (t) { return W[t] || (W[t] = Watcher(t)); };
+  function err(e) { var x = new Error(e && e.message || 'Save failed'); x.code = e && e.code; return x; }
+
+  var db = {
+    collection: function (t) {
+      return { onSnapshot: function (cb, onErr) {
+        var w = watcher(t);
+        w.subs.push(function () { cb(snapOf(w.map)); });
+        w.start().catch(function (e) { onErr && onErr(e); });
+        if (w.loaded && w.map.size) cb(snapOf(w.map));
+      } };
+    },
+    doc: function (path) {
+      var p = path.split('/'), t = p[0], id = p[1];
+      return {
+        onSnapshot: function (cb, onErr) {
+          var w = watcher(t);
+          var fire = function () { var d = w.map.get(id); cb({ exists: d !== undefined, data: function () { return d; } }); };
+          w.subs.push(fire); w.start().catch(function (e) { onErr && onErr(e); });
+          if (w.loaded && w.map.size) fire();
+        },
+        set: async function (data) {
+          var r = await S.sb.from(t).upsert({ id: id, data: data });
+          if (r.error) throw err(r.error);
+          var w = watcher(t); w.map.set(id, data); w.emit();
+        },
+        update: async function (patch) {
+          var r = await S.sb.rpc('patch_doc', { t: t, rid: id, patch: patch });
+          if (r.error) throw err(r.error);
+          var w = watcher(t), cur = w.map.get(id); if (cur) { w.map.set(id, Object.assign({}, cur, patch)); w.emit(); }
+        },
+        delete: async function () {
+          var r = await S.sb.from(t).delete().eq('id', id);
+          if (r.error) throw err(r.error);
+          var w = watcher(t); w.map.delete(id); w.emit();
+        }
+      };
+    },
+    history: async function (limit) {
+      var r = await S.sb.from('history').select('at,by_email,tbl,row_id,op,old_data,new_data').order('at', { ascending: false }).limit(limit || 300);
+      if (r.error) throw err(r.error);
+      return r.data;
+    }
+  };
+
+  var user = {
+    id: async function () { return S.session.user.id; },
+    can: async function () { return S.role === 'editor' || S.role === 'admin'; }
+  };
+  var downloads = {
+    save: async function (o) {
+      var ext = (o.filename.split('.').pop() || '').toLowerCase();
+      var type = ext === 'csv' ? 'text/csv;charset=utf-8' : 'text/plain;charset=utf-8';
+      var blob = new Blob([o.data], { type: type }), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = o.filename; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }
+  };
+
+  window.claude = { use: async function (name) {
+    await readyP;
+    return name === 'db' ? db : name === 'user' ? user : name === 'downloads' ? downloads : null;
+  } };
+
+  /* ---------- start ---------- */
+  function start() {
+    if (!cfg.url || !cfg.anonKey || /YOUR-/.test(cfg.anonKey)) { showMessage('Setup needed', 'Open config.js and paste your Supabase project URL and public (anon) key, then reload.'); return; }
+    if (!window.supabase) { showMessage('Could not load', 'The Supabase library did not load. Check your connection and reload.'); return; }
+    S.sb = window.supabase.createClient(cfg.url, cfg.anonKey);
+    S.sb.auth.getSession().then(function (r) { return enter(r.data.session); });
+    S.sb.auth.onAuthStateChange(function (ev, session) { if (ev === 'SIGNED_IN' && !settled) enter(session); if (ev === 'SIGNED_OUT') location.reload(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+/* ===== ENGINE: pure functions, no DOM. Months are integers: year*12 + (month-1). ===== */
+const Engine = (() => {
+  const HORIZON = 52; // months after the as-of month (Sep 2026 -> Dec 2030 in the original workbook)
+
+  const DEFAULTS = {
+    goalYear: 2027, goal: 50000000, asOf: '2026-08-31',
+    earlyEnd: 0.2, midEnd: 0.8, wEarly: 0.6, wMid: 1.25, wLate: 0.65,
+    margin: null, overhead: 0, useWeighted: true
+  };
+
+  const num = v => (typeof v === 'number' && isFinite(v)) ? v : 0;
+  const mi = s => {
+    if (!s || typeof s !== 'string') return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+    if (!m) return null;
+    return Number(m[1]) * 12 + Number(m[2]) - 1;
+  };
+  const miYear = m => Math.floor(m / 12);
+  const miMonth = m => (m % 12) + 1;
+  const miIso = m => miYear(m) + '-' + String(miMonth(m)).padStart(2, '0') + '-01';
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const miLabel = (m, withYear) => MON[miMonth(m) - 1] + (withYear ? ' ' + String(miYear(m)).slice(2) : '');
+  const miLong = m => MON[miMonth(m) - 1] + ' ' + miYear(m);
+
+  function settingsFrom(raw) {
+    const s = Object.assign({}, DEFAULTS, raw || {});
+    s.goalYear = Math.round(num(s.goalYear)) || DEFAULTS.goalYear;
+    return s;
+  }
+
+  function context(settings) {
+    const s = settingsFrom(settings);
+    const asOfM = mi(s.asOf) ?? mi(DEFAULTS.asOf);
+    const first = asOfM + 1; // first forecast month
+    const months = [];
+    for (let i = 0; i < HORIZON; i++) months.push(first + i);
+    return { s, asOfM, first, months, yearStart: s.goalYear * 12, yearEnd: s.goalYear * 12 + 11 };
+  }
+
+  // adj: {delay, extend, ps:{start,end}} scenario shifts in months
+  function schedule(p, ctx, adj) {
+    adj = adj || {};
+    const startRaw = mi(p.start), endRaw = mi(p.completion);
+    let startM = startRaw, endM = endRaw;
+    const started = p.startType === 'Actual' || (startRaw !== null && startRaw < ctx.first);
+    if (startRaw !== null) {
+      if (!started) {
+        const shift = num(adj.delay) + num(adj.ps && adj.ps.start);
+        startM = startRaw + shift;
+        if (endRaw !== null) endM = endRaw + shift;
+      }
+    }
+    if (endM !== null) endM += num(adj.extend) + num(adj.ps && adj.ps.end);
+    const eff = startM === null ? null : Math.max(startM, ctx.first);
+    if (eff !== null && endM !== null && endM < eff) endM = eff; // never finish before the forecast starts
+    return { startM, endM, eff, started, startRaw, endRaw };
+  }
+
+  function weights(sch, ctx) {
+    const s = ctx.s;
+    const w = new Array(ctx.months.length).fill(0);
+    if (sch.eff === null || sch.endM === null) return { w, count: 0 };
+    const count = sch.endM - sch.eff + 1;
+    ctx.months.forEach((m, i) => {
+      if (m < sch.eff || m > sch.endM) return;
+      const ratio = (m - sch.eff + 1) / Math.max(1, count);
+      w[i] = ratio <= s.earlyEnd ? s.wEarly : ratio <= s.midEnd ? s.wMid : s.wLate;
+    });
+    return { w, count };
+  }
+
+  function remaining(p) {
+    return num(p.contract) * (1 - Math.min(1, Math.max(0, num(p.pctComplete))));
+  }
+
+  function projectRows(projects, ctx, scen) {
+    return projects.map(p => {
+      const adj = scen ? { delay: scen.delay, extend: scen.extend, ps: scen.per && scen.per[p.id] } : null;
+      const sch = schedule(p, ctx, adj);
+      const { w, count } = weights(sch, ctx);
+      const sum = w.reduce((a, b) => a + b, 0);
+      const rem = remaining(p);
+      const rev = w.map(x => sum > 0 ? x / sum * rem : 0);
+      const counts = p.counts === 'Yes';
+      const conf = p.confidence == null ? 1 : num(p.confidence);
+      let yearRev = 0, afterYear = 0;
+      ctx.months.forEach((m, i) => {
+        if (m >= ctx.yearStart && m <= ctx.yearEnd) yearRev += rev[i];
+        else if (m > ctx.yearEnd) afterYear += rev[i];
+      });
+      return {
+        p, sch, count, rev, remaining: rem, counts, conf,
+        yearRev: counts ? yearRev : 0, yearRevAll: yearRev,
+        yearWeighted: counts ? yearRev * conf : 0,
+        afterYear: counts ? afterYear : 0,
+        undated: sch.eff === null || sch.endM === null
+      };
+    });
+  }
+
+  function marginPct(p, s) {
+    if (p.margin != null && p.margin !== '' && isFinite(p.margin)) return Number(p.margin);
+    if (s.margin != null && isFinite(s.margin)) return Number(s.margin);
+    return null;
+  }
+
+  function capitalRows(capital, ctx) {
+    return capital.map(c => {
+      const dueM = mi(c.due);
+      return { c, dueM, included: c.include === 'Yes', amount: num(c.amount), undated: dueM === null };
+    });
+  }
+
+  function summarize(projects, capital, settings, scen) {
+    const ctx = context(settings);
+    const s = ctx.s;
+    const rows = projectRows(projects, ctx, scen);
+    const caps = capitalRows(capital, ctx);
+    const n = ctx.months.length;
+    const cats = ['Multifamily', 'Subdivision', 'Custom Home'];
+
+    const base = new Array(n).fill(0), weighted = new Array(n).fill(0);
+    const byCat = {}; cats.forEach(c => byCat[c] = new Array(n).fill(0));
+    const marginBy = new Array(n).fill(0);
+    rows.forEach(r => {
+      if (!r.counts) return;
+      const mp = marginPct(r.p, s);
+      r.rev.forEach((v, i) => {
+        base[i] += v; weighted[i] += v * r.conf;
+        const c = byCat[r.p.category] ? r.p.category : null;
+        if (c) byCat[c][i] += v;
+        if (mp !== null) marginBy[i] += v * (s.useWeighted ? r.conf : 1) * mp;
+      });
+    });
+
+    const capBy = new Array(n).fill(0), capLand = new Array(n).fill(0), capDesign = new Array(n).fill(0);
+    let capBefore = 0, capYear = 0, capUnassigned = 0;
+    caps.forEach(r => {
+      if (r.undated) { capUnassigned += r.amount; return; }
+      if (!r.included) return;
+      const i = r.dueM - ctx.first;
+      if (r.dueM < ctx.yearStart) capBefore += r.amount;
+      if (r.dueM >= ctx.yearStart && r.dueM <= ctx.yearEnd) capYear += r.amount;
+      if (i >= 0 && i < n) {
+        capBy[i] += r.amount;
+        if (/land/i.test(r.c.type || '')) capLand[i] += r.amount; else capDesign[i] += r.amount;
+      }
+    });
+
+    const inYear = (arr) => arr.reduce((a, v, i) => a + (ctx.months[i] >= ctx.yearStart && ctx.months[i] <= ctx.yearEnd ? v : 0), 0);
+    const yearMonths = [];
+    for (let m = ctx.yearStart; m <= ctx.yearEnd; m++) yearMonths.push(m);
+    const idx = m => m - ctx.first;
+    const pick = arr => yearMonths.map(m => (idx(m) >= 0 && idx(m) < n) ? arr[idx(m)] : 0);
+
+    const totalContract = projects.reduce((a, p) => a + num(p.contract), 0);
+    const backlog = rows.reduce((a, r) => a + r.remaining, 0);
+    const unscheduled = projects.reduce((a, p, i) => a + (p.startType === 'TBD' ? num(p.contract) : 0), 0);
+    const unscheduledCount = projects.filter(p => p.startType === 'TBD').length;
+
+    // funding position: margin earned vs capital + overhead, month by month from first forecast month
+    const mpSet = rows.some(r => r.counts && marginPct(r.p, s) !== null);
+    const fund = [];
+    let cm = 0, cc = 0, co = 0, minBal = 0, minAt = null;
+    for (let i = 0; i < n; i++) {
+      const m = ctx.months[i];
+      if (m > ctx.yearEnd) break;
+      cm += marginBy[i]; cc += capBy[i]; co += num(s.overhead);
+      const bal = cm - cc - co;
+      fund.push({ m, cm, cc: cc + co, capOnly: cc, bal });
+      if (bal < minBal) { minBal = bal; minAt = m; }
+    }
+
+    return {
+      ctx, s, rows, caps, base, weighted, byCat, cats, marginBy, capBy, capLand, capDesign,
+      yearMonths, pick,
+      yearBase: inYear(base), yearWeighted: inYear(weighted), yearMargin: inYear(marginBy),
+      capBefore, capYear, capUnassigned,
+      totalContract, backlog, unscheduled, unscheduledCount,
+      fund, marginSet: mpSet, peakShortfall: -minBal, peakAt: minAt,
+      afterYear: rows.reduce((a, r) => a + r.afterYear, 0)
+    };
+  }
+
+  function checks(sum, projects, capital) {
+    const ctx = sum.ctx, s = sum.s;
+    const out = [];
+    const missing = projects.filter(p => p.counts === 'Yes' && (!p.start || !p.completion));
+    out.push({ id: 'dates', title: 'Projects missing construction dates', count: missing.length,
+      detail: missing.length ? missing.map(p => p.name).join(', ') : 'Every project that counts toward the goal has both dates.',
+      fix: 'projects', ok: missing.length === 0 });
+    const reversed = projects.filter(p => p.start && p.completion && mi(p.completion) < mi(p.start));
+    out.push({ id: 'order', title: 'Completion before start', count: reversed.length,
+      detail: reversed.length ? reversed.map(p => p.name).join(', ') : 'All completion dates fall after their start dates.', fix: 'projects', ok: reversed.length === 0 });
+    const alloc = sum.rows.filter(r => !r.undated).reduce((a, r) => a + r.rev.reduce((x, y) => x + y, 0) - r.remaining, 0);
+    const lost = sum.rows.filter(r => !r.undated && Math.abs(r.rev.reduce((x, y) => x + y, 0) - r.remaining) > 1);
+    out.push({ id: 'alloc', title: 'Scheduled revenue equals remaining contract value', count: lost.length,
+      detail: lost.length ? lost.map(r => r.p.name).join(', ') + ' run past the forecast window.' : 'Every dated project spreads its full remaining value.', fix: 'projects', ok: lost.length === 0 });
+    const stale = projects.filter(p => p.completion && mi(p.completion) < ctx.first && num(p.pctComplete) < 1);
+    out.push({ id: 'stale', title: 'Past finish date but not 100% complete', count: stale.length,
+      detail: stale.length ? stale.map(p => p.name).join(', ') : 'No project is overdue against its completion date.', fix: 'projects', ok: stale.length === 0 });
+    const undatedCap = capital.filter(c => !c.due || c.dateType === 'TBD');
+    out.push({ id: 'capdates', title: 'Capital events without a due date', count: undatedCap.length,
+      detail: undatedCap.length ? undatedCap.map(c => c.project + ' (' + c.description + ')').join('; ') : 'Every capital event has a due date.', fix: 'capital', ok: undatedCap.length === 0 });
+    const gap = Math.max(0, s.goal - sum.yearBase);
+    out.push({ id: 'goal', title: s.goalYear + ' goal gap', count: gap > 0 ? 1 : 0,
+      detail: gap > 0 ? 'Forecast is below the goal.' : 'Forecast meets or beats the goal.', fix: 'overview', ok: gap === 0 });
+    const lowConf = projects.filter(p => p.counts === 'Yes' && num(p.confidence) < 1 && p.start && p.completion);
+    out.push({ id: 'conf', title: 'Confidence discounts in the forecast', count: lowConf.length,
+      detail: lowConf.length ? lowConf.map(p => p.name).join(', ') : 'Every dated project is at 100% confidence, so weighted equals base.', fix: 'projects', ok: true, info: true });
+    return out;
+  }
+
+  return { DEFAULTS, HORIZON, mi, miYear, miMonth, miIso, miLabel, miLong, settingsFrom, context, schedule, weights, remaining,
+    projectRows, summarize, checks, marginPct, num };
+})();
+if (typeof module !== 'undefined') module.exports = Engine;
+
+</script>
+<script>
+(() => {
+'use strict';
+const E = Engine;
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nz = v => (typeof v === 'number' && isFinite(v)) ? v : 0;
+
+/* ---------- formatting ---------- */
+const nf0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const trimN = (n, d) => String(parseFloat(n.toFixed(d)));
+const usd = v => (v < 0 ? '-' : '') + '$' + nf0.format(Math.abs(Math.round(v)));
+function usdc(v) {
+  const a = Math.abs(v), sg = v < 0 ? '-' : '';
+  if (a >= 1e9) return sg + '$' + trimN(a / 1e9, 2) + 'B';
+  if (a >= 1e6) return sg + '$' + trimN(a / 1e6, a >= 1e8 ? 0 : a >= 1e7 ? 1 : 2) + 'M';
+  if (a >= 1e3) return sg + '$' + trimN(a / 1e3, a >= 1e5 ? 0 : 1) + 'K';
+  return sg + '$' + Math.round(a);
+}
+const pctS = (v, d) => (v * 100).toFixed(d || 0) + '%';
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? MONTHS[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1] : '';
+}
+const fmtMon = mi => iso => iso;
+function monthOf(iso) { const m = E.mi(iso); return m == null ? '' : E.miLong(m); }
+const plain = html => html.replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+
+/* ---------- constants ---------- */
+const CATS = ['Multifamily', 'Subdivision', 'Custom Home'];
+const CAT_COLOR = { 'Multifamily': 'var(--s1)', 'Subdivision': 'var(--s2)', 'Custom Home': 'var(--s3)' };
+const catColor = c => CAT_COLOR[c] || 'var(--s4)';
+const DATE_TYPES = ['Actual', 'Estimated', 'Planning Assumption', 'TBD'];
+const STATUSES = ['Under Construction', 'Scheduled', 'Design', 'Land Closing / Design TBD', 'Low-Confidence Pipeline'];
+const CAP_TYPES = ['Land', 'Design / Consultants', 'Design / Preconstruction'];
+const PREFIX = { 'Multifamily': 'MF', 'Subdivision': 'SD', 'Custom Home': 'CH' };
+
+const ICONS = {
+  overview: '<svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>',
+  projects: '<svg viewBox="0 0 16 16"><path d="M5 4h9M5 8h9M5 12h9"/><circle cx="2.5" cy="4" r=".6"/><circle cx="2.5" cy="8" r=".6"/><circle cx="2.5" cy="12" r=".6"/></svg>',
+  schedule: '<svg viewBox="0 0 16 16"><path d="M2 4h6M5 8h8M3 12h7"/></svg>',
+  capital: '<svg viewBox="0 0 16 16"><path d="M2 6l6-3 6 3M3.5 13V7.5M8 13V7.5M12.5 13V7.5M2 13h12"/></svg>',
+  margin: '<svg viewBox="0 0 16 16"><path d="M2 12l4-4 3 3 5-6"/><path d="M10.5 5H14v3.5"/></svg>',
+  checks: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M5.2 8.2l2 2 3.6-4"/></svg>',
+  history: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/></svg>'
+};
+const NAV = [
+  ['overview', 'Overview'], ['projects', 'Projects'], ['schedule', 'Schedule what-if'],
+  ['capital', 'Capital'], ['margin', 'Margin & funding'], ['checks', 'Checks & settings']
+].concat(window.VALIANT_BACKEND ? [['history', 'History']] : []);
+const ATT_ICONS = {
+  warn: '<svg class="att-ic warn" viewBox="0 0 20 20"><path d="M10 3l8 14H2z"/><path d="M10 8.5v3.8M10 14.8v.1"/></svg>',
+  good: '<svg class="att-ic good" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/><path d="M6.5 10.2l2.4 2.4 4.6-5"/></svg>',
+  info: '<svg class="att-ic info" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 6.3v.1"/></svg>'
+};
+const PILL_ICONS = {
+  good: '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.5"/></svg>',
+  warn: '<svg viewBox="0 0 16 16"><path d="M8 2.5l6 10.5H2zM8 7v3M8 11.6v.1"/></svg>',
+  bad: '<svg viewBox="0 0 16 16"><path d="M8 2.5l6 10.5H2zM8 7v3M8 11.6v.1"/></svg>'
+};
+
+/* ---------- state ---------- */
+const state = {
+  db: null, dbState: 'connecting', uid: null, readOnly: false,
+  projects: [], capital: [], settings: {},
+  loaded: { p: false, c: false, s: false },
+  saving: 0
+};
+let viewName = 'overview';
+try { const v = localStorage.getItem('vcp-view'); if (v && NAV.some(n => n[0] === v)) viewName = v; } catch (e) {}
+const ui = {
+  tables: {}, confirm: null, q: '', cat: 'All', all: false, focusKey: null,
+  scen: { delay: 0, extend: 0, per: {} }, fundWeighted: null
+};
+const byOrder = (a, b) => (nz(a.order) - nz(b.order)) || String(a.id).localeCompare(String(b.id));
+const byDue = (a, b) => (a.due ? 0 : 1) - (b.due ? 0 : 1) || String(a.due || '').localeCompare(String(b.due || '')) || String(a.id).localeCompare(String(b.id));
+const projectsSorted = () => state.projects.slice().sort(byOrder);
+const capitalSorted = () => state.capital.slice().sort(byDue);
+const S = () => E.settingsFrom(state.settings);
+function summary(scen) { return E.summarize(projectsSorted(), capitalSorted(), state.settings, scen || null); }
+const ro = () => state.readOnly ? 'disabled' : '';
+
+/* ---------- tooltip ---------- */
+const tipEl = $('#tip');
+function showTip(html, x, y) {
+  tipEl.innerHTML = html; tipEl.hidden = false;
+  const r = tipEl.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+  if (left < 8) left = 8;
+  if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+  if (top < 8) top = 8;
+  tipEl.style.left = left + 'px'; tipEl.style.top = top + 'px';
+}
+function hideTip() { tipEl.hidden = true; }
+document.addEventListener('pointermove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t) return hideTip();
+  showTip(t.getAttribute('data-tip'), e.clientX, e.clientY);
+});
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (t) showTip(t.getAttribute('data-tip'), e.clientX, e.clientY);
+});
+document.addEventListener('focusin', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (t) { const r = t.getBoundingClientRect(); showTip(t.getAttribute('data-tip'), r.left + r.width / 2, r.top); }
+});
+document.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('[data-tip]')) hideTip(); });
+document.addEventListener('pointerout', e => { if (!e.relatedTarget) hideTip(); });
+function tipHtml(title, rows, foot) {
+  return '<div class="tt-h">' + esc(title) + '</div>' + rows.map(r =>
+    '<div class="tt-r"><span class="tt-k" style="' + (r.color ? 'background:' + r.color : 'visibility:hidden') + '"></span><span class="tt-n">' + esc(r.name) + '</span><span class="tt-v">' + esc(r.val) + '</span></div>'
+  ).join('') + (foot ? '<div class="tt-f">' + foot + '</div>' : '');
+}
+const tipAttr = html => 'data-tip="' + esc(html) + '" aria-label="' + esc(plain(html)) + '"';
+
+let toastT = null;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3800);
+}
+
+/* ---------- chart helpers (SVG strings; colors via style so CSS variables resolve) ---------- */
+function niceScale(maxV, n) {
+  n = n || 4;
+  const raw = maxV / n || 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(f => f * mag).find(s => s >= raw) || mag * 10;
+  const max = Math.ceil(maxV / step - 1e-9) * step;
+  const ticks = []; for (let t = 0; t <= max + 1e-9; t += step) ticks.push(t);
+  return { max: max || step, step, ticks };
+}
+function xLabels(labels, band, L, H, B) {
+  const skip = Math.max(1, Math.ceil(40 / band));
+  return labels.map((lb, i) => i % skip ? '' :
+    '<text class="tick" x="' + (L + band * (i + .5)) + '" y="' + (H - B + 18) + '" text-anchor="middle">' + esc(lb) + '</text>').join('');
+}
+function roundedTop(x, y, w, h, r) {
+  r = Math.min(r, h / 2, w / 2);
+  return 'M' + x + ',' + (y + h) + 'L' + x + ',' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y + 'L' + (x + w - r) + ',' + y + 'Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) + 'L' + (x + w) + ',' + (y + h) + 'Z';
+}
+function columnsChart(o) {
+  const W = Math.max(280, o.w), H = o.h || 270, L = 54, R = 10, T = 16, B = 28;
+  const pw = W - L - R, ph = H - T - B, n = o.labels.length;
+  const totals = o.labels.map((_, i) => o.stacks.reduce((a, s) => a + nz(s.vals[i]), 0));
+  const sc = niceScale(Math.max.apply(null, totals.concat([o.hline || 0, 1])) * 1.06, 4);
+  const y = v => T + ph - v / sc.max * ph;
+  const band = pw / n, bw = Math.min(24, band * .6);
+  let g = '';
+  sc.ticks.forEach(t => {
+    g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t) + '" y2="' + y(t) + '"/>' +
+      '<text class="tick" x="' + (L - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + usdc(t) + '</text>';
+  });
+  g += '<line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '"/>';
+  const maxI = totals.indexOf(Math.max.apply(null, totals));
+  for (let i = 0; i < n; i++) {
+    const x = L + band * i + (band - bw) / 2;
+    let cum = 0; const segs = o.stacks.map(s => ({ s, v: nz(s.vals[i]) })).filter(d => d.v > 0);
+    segs.forEach((d, k) => {
+      const top = y(cum + d.v), h = y(cum) - top, last = k === segs.length - 1;
+      const hh = k === 0 ? h : Math.max(0, h - 2);
+      if (hh > .5) {
+        g += last ? '<path d="' + roundedTop(x, top, bw, hh, 4) + '" style="fill:' + d.s.color + '"/>'
+          : '<rect x="' + x + '" y="' + top + '" width="' + bw + '" height="' + hh + '" style="fill:' + d.s.color + '"/>';
+      }
+      cum += d.v;
+    });
+    if (totals[i] > 0 && (o.labels_mode === 'nonzero' || (o.labels_mode === 'max' && i === maxI))) {
+      g += '<text class="vlabel" x="' + (x + bw / 2) + '" y="' + (y(totals[i]) - 6) + '" text-anchor="middle">' + usdc(totals[i]) + '</text>';
+    }
+  }
+  if (o.hline) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(o.hline) + '" y2="' + y(o.hline) + '" style="stroke:var(--ink);stroke-width:1.5"/>';
+  g += xLabels(o.labels, band, L, H, B);
+  for (let i = 0; i < n; i++) {
+    g += '<rect class="hit" x="' + (L + band * i) + '" y="' + T + '" width="' + band + '" height="' + ph + '" tabindex="0" role="img" ' + tipAttr(o.tip(i)) + '/>';
+  }
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="' + esc(o.title || 'Column chart') + '">' + g + '</svg>';
+}
+function linesChart(o) {
+  const W = Math.max(280, o.w), H = o.h || 270, L = 54, R = 14, T = 16, B = 28;
+  const pw = W - L - R, ph = H - T - B, n = o.labels.length;
+  const all = []; o.series.forEach(s => s.vals.forEach(v => all.push(nz(v))));
+  const sc = niceScale(Math.max.apply(null, all.concat([o.hline || 0, 1])) * 1.08, 4);
+  const y = v => T + ph - v / sc.max * ph;
+  const band = pw / n, X = i => L + band * (i + .5);
+  let g = '';
+  sc.ticks.forEach(t => {
+    g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t) + '" y2="' + y(t) + '"/>' +
+      '<text class="tick" x="' + (L - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + usdc(t) + '</text>';
+  });
+  g += '<line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '"/>';
+  if (o.shade) {
+    let d = '';
+    for (let i = 0; i < n - 1; i++) {
+      const a = o.shade.hi[i], b = o.shade.hi[i + 1], c = o.shade.lo[i], e = o.shade.lo[i + 1];
+      if (a > c || b > e) d += 'M' + X(i) + ',' + y(a) + 'L' + X(i + 1) + ',' + y(b) + 'L' + X(i + 1) + ',' + y(Math.min(b, e)) + 'L' + X(i) + ',' + y(Math.min(a, c)) + 'Z';
+    }
+    if (d) g += '<path d="' + d + '" style="fill:var(--bad);fill-opacity:.14"/>';
+  }
+  if (o.hline) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(o.hline) + '" y2="' + y(o.hline) + '" style="stroke:var(--ink);stroke-width:1.5"/>';
+  o.series.forEach(s => {
+    const pts = s.vals.map((v, i) => (i ? 'L' : 'M') + X(i) + ',' + y(nz(v))).join('');
+    g += '<path d="' + pts + '" style="fill:none;stroke:' + s.color + ';stroke-width:2;stroke-linejoin:round;stroke-linecap:round"/>';
+    const li = n - 1;
+    g += '<circle cx="' + X(li) + '" cy="' + y(nz(s.vals[li])) + '" r="4" style="fill:' + s.color + ';stroke:var(--surface);stroke-width:2"/>';
+  });
+  if (o.mark != null) {
+    const mx = X(o.mark.i), my = y(o.mark.v);
+    const right = mx > W * .62;
+    g += '<circle cx="' + mx + '" cy="' + my + '" r="5" style="fill:var(--bad);stroke:var(--surface);stroke-width:2"/>' +
+      '<text class="note" x="' + (right ? mx - 10 : mx + 10) + '" y="' + (my - 8) + '" text-anchor="' + (right ? 'end' : 'start') + '">' + esc(o.mark.text) + '</text>';
+  }
+  g += xLabels(o.labels, band, L, H, B);
+  for (let i = 0; i < n; i++) {
+    g += '<rect class="hit" x="' + (L + band * i) + '" y="' + T + '" width="' + band + '" height="' + ph + '" tabindex="0" role="img" ' + tipAttr(o.tip(i)) + '/>';
+  }
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="' + esc(o.title || 'Line chart') + '">' + g + '</svg>';
+}
+const legendHtml = items => '<div class="legend">' + items.map(i => i.line
+  ? '<span><i class="ln" style="background:' + i.color + '"></i>' + esc(i.name) + '</span>'
+  : '<span><i class="sw" style="background:' + i.color + '"></i>' + esc(i.name) + '</span>').join('') + '</div>';
+
+/* chart registry: views push {id, build(w)} and a placeholder div; builders re-run on resize */
+let charts = [];
+const chartSlot = id => '<div class="chart" id="ch-' + id + '"></div>';
+function runCharts() {
+  charts.forEach(c => {
+    const el = document.getElementById('ch-' + c.id);
+    if (!el) return;
+    const w = el.clientWidth || 640;
+    try { el.innerHTML = c.build(w); } catch (err) { el.innerHTML = '<div class="empty-chart">This chart could not be drawn.</div>'; console.error(err); }
+  });
+}
+function chartToggle(id) {
+  return '<button class="btn small" data-act="tbl" data-id="' + id + '">' + (ui.tables[id] ? 'View chart' : 'View table') + '</button>';
+}
+function dataTable(head, rows, foot) {
+  return '<div class="tbl-wrap"><table><thead><tr>' + head.map((h, i) => '<th class="' + (i ? 'r' : '') + '">' + esc(h) + '</th>').join('') +
+    '</tr></thead><tbody>' + rows.map(r => '<tr>' + r.map((c, i) => '<td class="' + (i ? 'num' : '') + '">' + esc(c) + '</td>').join('') + '</tr>').join('') +
+    (foot ? '<tr class="total">' + foot.map((c, i) => '<td class="' + (i ? 'num' : '') + '">' + esc(c) + '</td>').join('') + '</tr>' : '') + '</tbody></table></div>';
+}
+
+/* ---------- small view pieces ---------- */
+const head = (title, sub, actions) => '<div class="head"><div><h1>' + esc(title) + '</h1>' + (sub ? '<p class="sub">' + sub + '</p>' : '') + '</div><div class="actions">' + (actions || '') + '</div></div>';
+const tile = (label, value, sub, go, dim) => {
+  const inner = '<div class="t-label">' + esc(label) + '</div><div class="t-val' + (dim ? ' dim' : '') + '">' + value + '</div><div class="t-sub">' + sub + '</div>';
+  return go ? '<button class="tile" data-go="' + go + '">' + inner + '</button>' : '<div class="tile">' + inner + '</div>';
+};
+const pill = (kind, text) => '<span class="pill ' + kind + '">' + PILL_ICONS[kind] + esc(text) + '</span>';
+const dimBlock = (title, text, action) => '<div class="empty"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' + (action || '') + '</div>';
+
+/* ---------- editable cells ---------- */
+function fk(coll, id, field) { return coll + ':' + id + ':' + field; }
+function inp(coll, id, field, val, type, o) {
+  o = o || {};
+  const common = 'data-edit data-coll="' + coll + '" data-id="' + esc(id) + '" data-field="' + field + '" data-type="' + type + '" data-fk="' + esc(fk(coll, id, field)) + '" aria-label="' + esc(o.label || field) + '" ' + (o.disabled || ro());
+  let shown = val;
+  if (type === 'money') shown = (val == null || val === '') ? '' : nf0.format(nz(val));
+  else if (type === 'pct' || type === 'pctnull') shown = (val == null || val === '') ? '' : String(parseFloat((nz(val) * 100).toFixed(1)));
+  else if (type === 'num') shown = (val == null || val === '') ? '' : String(val);
+  const cls = 'in' + (o.right ? ' r' : '') + (o.cls ? ' ' + o.cls : '');
+  if (type === 'date') return '<input class="' + cls + '" type="date" value="' + esc(val || '') + '" ' + common + '>';
+  return '<input class="' + cls + '" type="text" ' + (type === 'money' || type === 'pct' || type === 'pctnull' || type === 'num' ? 'inputmode="decimal"' : '') +
+    ' value="' + esc(shown == null ? '' : shown) + '" ' + (o.list ? 'list="' + o.list + '"' : '') + (o.placeholder ? ' placeholder="' + esc(o.placeholder) + '"' : '') + ' ' + common + '>';
+}
+function sel(coll, id, field, val, options, o) {
+  o = o || {};
+  const opts = options.slice(); if (val != null && val !== '' && opts.indexOf(val) < 0) opts.unshift(val);
+  return '<select class="in" data-edit data-coll="' + coll + '" data-id="' + esc(id) + '" data-field="' + field + '" data-type="select" data-fk="' + esc(fk(coll, id, field)) + '" aria-label="' + esc(o.label || field) + '" ' + ro() + '>' +
+    opts.map(x => '<option value="' + esc(x) + '"' + (x === val ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select>';
+}
+
+/* =====================================================================
+   VIEWS
+   ===================================================================== */
+function viewOverview(sum) {
+  const s = sum.s, gy = s.goalYear;
+  const ratio = s.goal > 0 ? sum.yearBase / s.goal : 0, diff = sum.yearBase - s.goal;
+  const scaleMax = Math.max(1, ratio), fillW = (ratio / scaleMax * 100).toFixed(2), markX = (1 / scaleMax * 100).toFixed(2);
+  const ahead = diff >= 0;
+  const nDated = sum.rows.filter(r => !r.undated).length;
+  const hero = '<section class="card hero"><div class="eyebrow">' + gy + ' revenue forecast</div>' +
+    '<div class="hero-num">' + usdc(sum.yearBase) + '</div>' +
+    '<div class="hero-line"><strong>' + Math.round(ratio * 100) + '%</strong> of the ' + usdc(s.goal) + ' goal</div>' +
+    (ahead ? pill('good', usdc(diff) + ' ahead of goal') : pill('bad', usdc(-diff) + ' short of goal')) +
+    '<div class="meter" role="img" aria-label="Forecast is ' + Math.round(ratio * 100) + ' percent of goal"><div class="fill" style="width:' + fillW + '%"></div><div class="mark" style="left:' + markX + '%"><span>Goal ' + usdc(s.goal) + '</span></div></div>' +
+    '<div class="hero-sub"><span><b>' + usdc(sum.yearWeighted) + '</b> weighted for confidence</span><span><b>' + nDated + '</b> of ' + sum.rows.length + ' projects have dates</span>' +
+    (sum.afterYear > 0 ? '<span><b>' + usdc(sum.afterYear) + '</b> more lands after ' + gy + '</span>' : '') + '</div></section>';
+  const marginTile = sum.marginSet
+    ? tile('Margin left after costs', usdc(sum.yearMargin), 'in ' + gy + ' at ' + (s.margin != null ? pctS(s.margin, 1) : 'your project') + ' gross margin', 'margin')
+    : tile('Margin left after costs', 'Not set', 'Enter your gross margin to see what the work funds', 'margin', true);
+  const tiles = '<div class="tiles">' +
+    tile('Capital due in ' + gy, usdc(sum.capYear), (sum.capBefore ? usdc(sum.capBefore) + ' due earlier. ' : '') + (sum.capUnassigned ? usdc(sum.capUnassigned) + ' has no date.' : 'All dated.'), 'capital') +
+    tile('Remaining backlog', usdc(sum.backlog), 'of ' + usdc(sum.totalContract) + ' total contract value', 'projects') +
+    tile('Unscheduled pipeline', usdc(sum.unscheduled), sum.unscheduledCount + ' project' + (sum.unscheduledCount === 1 ? '' : 's') + ' without dates', 'projects') +
+    marginTile + '</div>';
+
+  charts = [];
+  charts.push({ id: 'rev', build: w => revenueChart(sum, w) });
+  charts.push({ id: 'cap', build: w => capitalOverviewChart(sum, w) });
+
+  const top = sum.rows.filter(r => r.counts && r.yearRev > 0).sort((a, b) => b.yearRev - a.yearRev);
+  const shown = top.slice(0, 8), rest = top.slice(8);
+  const maxV = shown.length ? shown[0].yearRev : 1;
+  const bars = shown.map(r => {
+    const share = sum.yearBase > 0 ? r.yearRev / sum.yearBase : 0;
+    const tp = tipHtml(r.p.name, [{ name: r.p.category, val: usdc(r.yearRev), color: catColor(r.p.category) }, { name: 'Share of ' + gy, val: pctS(share, 1) }, { name: 'Remaining value', val: usdc(r.remaining) }], 'Finish ' + esc(fmtDate(r.p.completion) || 'not set'));
+    return '<div class="hb" ' + tipAttr(tp) + ' tabindex="0"><span class="hb-n"><i class="hb-sw" style="background:' + catColor(r.p.category) + '"></i>' + esc(r.p.name) + '</span><span class="hb-t"><span class="hb-f" style="width:' + (r.yearRev / maxV * 100).toFixed(1) + '%;background:' + catColor(r.p.category) + '"></span></span><span class="hb-v">' + usdc(r.yearRev) + '</span></div>';
+  }).join('') + (rest.length ? '<div class="hb"><span class="hb-n muted">' + rest.length + ' other projects</span><span></span><span class="hb-v muted">' + usdc(rest.reduce((a, r) => a + r.yearRev, 0)) + '</span></div>' : '');
+
+  const cks = E.checks(sum, projectsSorted(), capitalSorted()).filter(c => !c.ok || c.info);
+  const att = cks.length ? cks.map(c =>
+    '<div class="att-row">' + (c.ok ? ATT_ICONS.info : ATT_ICONS.warn) + '<div><div class="att-t">' + esc(c.title) + (c.count ? ' <span class="tag">' + c.count + '</span>' : '') + '</div><div class="att-d">' + esc(c.detail) + '</div></div>' +
+    '<button class="btn small" data-go="' + c.fix + '">Open</button></div>').join('')
+    : '<div class="att-row">' + ATT_ICONS.good + '<div><div class="att-t">Nothing needs attention</div><div class="att-d">Every check passes.</div></div><span></span></div>';
+
+  return head(gy + ' construction plan',
+    'Forecast as of ' + esc(fmtDate(s.asOf)) + '. ' + sum.rows.length + ' projects. Edits save for everyone on the team.',
+    '<button class="btn" data-act="export-forecast">Export CSV</button>') +
+    '<div class="top-grid">' + hero + tiles + '</div>' +
+    '<section class="card"><div class="card-h"><div><h2>Revenue by month against the goal</h2><p class="lead">Base forecast by project category. The line is the monthly goal of ' + usdc(s.goal / 12) + '.</p></div>' + chartToggle('rev') + '</div>' + chartSlot('rev') + '</section>' +
+    '<div class="two"><section class="card"><div class="card-h"><div><h2>Capital due by month</h2><p class="lead">Land, design and preconstruction cash, from the capital plan.</p></div>' + chartToggle('cap') + '</div>' + chartSlot('cap') + '</section>' +
+    '<section class="card"><div class="card-h"><div><h2>Where ' + gy + ' revenue comes from</h2><p class="lead">Largest projects by forecast revenue.</p></div></div>' + (bars || '<div class="empty-chart">No project has scheduled revenue in ' + gy + '.</div>') + '</section></div>' +
+    '<section class="card" style="margin-top:16px"><div class="card-h"><div><h2>Needs attention</h2></div></div><div class="att">' + att + '</div></section>';
+}
+
+function revenueChart(sum, w) {
+  const ym = sum.yearMonths, goal = sum.s.goal / 12;
+  const stacks = sum.cats.map(c => ({ name: c, color: catColor(c), vals: sum.pick(sum.byCat[c]) }));
+  const wt = sum.pick(sum.weighted), cp = sum.pick(sum.capBy), base = sum.pick(sum.base);
+  if (ui.tables.rev) {
+    return dataTable(['Month', 'Multifamily', 'Subdivision', 'Custom Home', 'Base', 'Weighted', 'Goal', 'Capital due'],
+      ym.map((m, i) => [E.miLong(m), usd(stacks[0].vals[i]), usd(stacks[1].vals[i]), usd(stacks[2].vals[i]), usd(base[i]), usd(wt[i]), usd(goal), usd(cp[i])]),
+      ['Total', usd(sum.pick(sum.byCat.Multifamily).reduce((a, b) => a + b, 0)), usd(sum.pick(sum.byCat.Subdivision).reduce((a, b) => a + b, 0)), usd(sum.pick(sum.byCat['Custom Home']).reduce((a, b) => a + b, 0)), usd(sum.yearBase), usd(sum.yearWeighted), usd(sum.s.goal), usd(sum.capYear)]);
+  }
+  const tip = i => {
+    const tot = base[i];
+    return tipHtml(E.miLong(ym[i]), stacks.map(s => ({ name: s.name, val: usdc(s.vals[i]), color: s.color })).concat([
+      { name: 'Total', val: usdc(tot) }, { name: 'Weighted', val: usdc(wt[i]) }, { name: 'Monthly goal', val: usdc(goal), color: 'var(--ink)' }]),
+      (tot >= goal ? usdc(tot - goal) + ' above goal' : usdc(goal - tot) + ' below goal') + (cp[i] ? '<br>Capital due ' + usdc(cp[i]) : ''));
+  };
+  return legendHtml(stacks.map(s => ({ name: s.name, color: s.color })).concat([{ name: 'Monthly goal', color: 'var(--ink)', line: true }])) +
+    columnsChart({ w, h: w < 520 ? 230 : 280, labels: ym.map(m => E.miLabel(m)), stacks, hline: goal, tip, labels_mode: 'max', title: 'Revenue by month' });
+}
+function capitalMonths(sum) {
+  const out = []; for (let m = sum.ctx.first; m <= sum.ctx.yearEnd; m++) out.push(m);
+  return out;
+}
+function capitalOverviewChart(sum, w) {
+  const ms = capitalMonths(sum), i0 = k => ms[k] - sum.ctx.first;
+  const vals = ms.map((m, k) => sum.capBy[i0(k)]);
+  if (ui.tables.cap) {
+    return dataTable(['Month', 'Land', 'Design and preconstruction', 'Total'], ms.map((m, k) => [E.miLong(m), usd(sum.capLand[i0(k)]), usd(sum.capDesign[i0(k)]), usd(vals[k])]).filter(r => r[3] !== '$0'),
+      ['Total', usd(sum.capLand.slice(0, ms.length).reduce((a, b) => a + b, 0)), usd(sum.capDesign.slice(0, ms.length).reduce((a, b) => a + b, 0)), usd(vals.reduce((a, b) => a + b, 0))]);
+  }
+  if (!vals.some(v => v > 0)) return '<div class="empty-chart">No capital is due in this period.</div>';
+  let run = 0;
+  const tip = k => { run = vals.slice(0, k + 1).reduce((a, b) => a + b, 0);
+    return tipHtml(E.miLong(ms[k]), [{ name: 'Land', val: usdc(sum.capLand[i0(k)]) }, { name: 'Design and preconstruction', val: usdc(sum.capDesign[i0(k)]) }, { name: 'Due this month', val: usdc(vals[k]), color: 'var(--accent)' }], 'Running total ' + usdc(run)); };
+  return columnsChart({ w, h: 240, labels: ms.map(m => E.miLabel(m, true)), stacks: [{ name: 'Capital due', color: 'var(--accent)', vals }], tip, labels_mode: 'nonzero', title: 'Capital due by month' });
+}
+
+/* ----- Projects ----- */
+function viewProjects(sum) {
+  const gy = sum.s.goalYear, all = ui.all;
+  const q = ui.q.trim().toLowerCase();
+  let rows = sum.rows.filter(r => (ui.cat === 'All' || r.p.category === ui.cat) && (!q || (r.p.name + ' ' + r.p.id + ' ' + (r.p.status || '') + ' ' + (r.p.location || '')).toLowerCase().indexOf(q) >= 0));
+  const cols = [['Project', 'stick w-name'], ['Category', 'w-cat'], ['Status', 'w-status'], ['Contract', 'r w-money'], ['% done', 'r w-pct'], ['Start', 'w-date'], ['Finish', 'w-date'], ['Confidence', 'r w-pct'], ['Counts?', 'w-sm'], ['Remaining', 'r w-money'], [gy + ' revenue', 'r w-money']];
+  if (all) { cols.splice(1, 0, ['ID', 'w-id']); cols.splice(3, 0, ['Location', 'w-sm']); cols.splice(4, 0, ['Units', 'r w-pct']); cols.splice(11, 0, ['Start type', 'w-sm'], ['Finish type', 'w-sm'], ['Internal?', 'w-sm']); cols.push(['Notes', 'w-notes']); }
+  cols.push(['', '']);
+  const body = rows.map(r => {
+    const p = r.p, id = p.id, nodate = !p.start || !p.completion;
+    const c = [];
+    c.push('<td class="stick">' + inp('projects', id, 'name', p.name, 'text', { label: 'Project name' }) + '</td>');
+    if (all) c.push('<td>' + esc(id) + '</td>');
+    c.push('<td>' + sel('projects', id, 'category', p.category, CATS, { label: 'Category' }) + '</td>');
+    if (all) c.push('<td>' + inp('projects', id, 'location', p.location || '', 'text', { label: 'Location' }) + '</td>');
+    c.push('<td>' + inp('projects', id, 'status', p.status || '', 'text', { list: 'dl-status', label: 'Status' }) + '</td>');
+    if (all) c.push('<td>' + inp('projects', id, 'units', p.units, 'num', { right: true, label: 'Units' }) + '</td>');
+    c.push('<td>' + inp('projects', id, 'contract', p.contract, 'money', { right: true, label: 'Contract value' }) + '</td>');
+    c.push('<td>' + inp('projects', id, 'pctComplete', p.pctComplete, 'pct', { right: true, label: 'Percent complete' }) + '</td>');
+    c.push('<td class="' + (!p.start ? 'warncell' : '') + '">' + inp('projects', id, 'start', p.start, 'date', { label: 'Construction start' }) + '</td>');
+    c.push('<td class="' + (!p.completion ? 'warncell' : '') + '">' + inp('projects', id, 'completion', p.completion, 'date', { label: 'Construction completion' }) + '</td>');
+    if (all) c.push('<td>' + sel('projects', id, 'startType', p.startType || 'TBD', DATE_TYPES, { label: 'Start date type' }) + '</td><td>' + sel('projects', id, 'completionType', p.completionType || 'TBD', DATE_TYPES, { label: 'Completion date type' }) + '</td>');
+    c.push('<td>' + inp('projects', id, 'confidence', p.confidence, 'pct', { right: true, label: 'Confidence' }) + '</td>');
+    c.push('<td>' + sel('projects', id, 'counts', p.counts || 'Yes', ['Yes', 'No'], { label: 'Counts toward goal' }) + '</td>');
+    if (all) c.push('<td>' + sel('projects', id, 'internal', p.internal || 'No', ['Yes', 'No'], { label: 'Internal project' }) + '</td>');
+    c.push('<td class="num">' + usd(r.remaining) + '</td>');
+    c.push('<td class="num">' + (r.counts ? usd(r.yearRev) : '<span class="muted">excluded</span>') + '</td>');
+    if (all) c.push('<td>' + inp('projects', id, 'notes', p.notes || '', 'text', { label: 'Notes' }) + '</td>');
+    const key = 'projects:' + id;
+    c.push('<td>' + (state.readOnly ? '' : '<button class="x' + (ui.confirm === key ? ' sure' : '') + '" data-act="del" data-coll="projects" data-id="' + esc(id) + '" aria-label="Delete ' + esc(p.name) + '">' + (ui.confirm === key ? 'Delete?' : 'Remove') + '</button>') + '</td>');
+    return '<tr class="' + (r.counts ? '' : 'dim') + '">' + c.join('') + '</tr>';
+  }).join('');
+  const tot = (f) => rows.reduce((a, r) => a + f(r), 0);
+  const nBefore = all ? 4 : 3;
+  const foot = '<tr class="total"><td class="stick">' + rows.length + ' project' + (rows.length === 1 ? '' : 's') + '</td>' + '<td></td>'.repeat(all ? 4 : 2) +
+    '<td class="num">' + usd(tot(r => nz(r.p.contract))) + '</td>' + '<td></td>'.repeat(all ? 6 : 5) + '<td class="num">' + usd(tot(r => r.remaining)) + '</td><td class="num">' + usd(tot(r => r.yearRev)) + '</td>' + (all ? '<td></td>' : '') + '<td></td></tr>';
+  const table = '<div class="tbl-wrap" data-scroll="proj"><table><thead><tr>' + cols.map(c => '<th class="' + c[1] + '">' + esc(c[0]) + '</th>').join('') + '</tr></thead><tbody>' + body + foot + '</tbody></table></div>';
+  const filters = '<div class="filters"><input class="ctl" style="width:220px" type="search" placeholder="Search projects" value="' + esc(ui.q) + '" data-live data-fk="ui:q" data-ui="q" aria-label="Search projects">' +
+    '<select class="ctl" data-live data-fk="ui:cat" data-ui="cat" aria-label="Filter by category"><option>All</option>' + CATS.map(c => '<option' + (ui.cat === c ? ' selected' : '') + '>' + c + '</option>').join('') + '</select>' +
+    '<label class="chk"><input type="checkbox" data-live data-ui="all" ' + (all ? 'checked' : '') + '>Show all fields</label></div>';
+  const empty = !state.projects.length ? dimBlock('No projects yet', 'Add your first project to start building the forecast.', state.readOnly ? '' : '<button class="btn primary" data-act="add-project">Add project</button>') : '';
+  return head('Projects', 'One row per project. Change a date, contract value or percent complete and every total updates. Rows with no dates are highlighted because they add no revenue yet.',
+    '<button class="btn" data-act="export-projects">Export CSV</button>' + (state.readOnly ? '' : '<button class="btn primary" data-act="add-project">Add project</button>')) +
+    (state.projects.length ? filters + table : empty) +
+    '<datalist id="dl-status">' + STATUSES.map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>';
+}
+
+/* ----- Capital ----- */
+function viewCapital(sum) {
+  const gy = sum.s.goalYear;
+  charts = [{ id: 'capx', build: w => capitalDetailChart(sum, w) }];
+  const caps = capitalSorted();
+  const included = caps.filter(c => c.include === 'Yes' && c.due).reduce((a, c) => a + nz(c.amount), 0);
+  const tiles = '<div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-bottom:16px">' +
+    tile('Due before ' + gy, usdc(sum.capBefore), 'Included events, already scheduled') +
+    tile('Due in ' + gy, usdc(sum.capYear), 'Included events with a ' + gy + ' due date') +
+    tile('No due date yet', usdc(sum.capUnassigned), 'Stays out of the monthly totals until dated') +
+    tile('All included capital', usdc(included), 'Includes dates outside the chart window') + '</div>';
+  const body = caps.map(c => {
+    const id = c.id, key = 'capital:' + id, undated = !c.due;
+    return '<tr class="' + (c.include === 'Yes' ? '' : 'dim') + '">' +
+      '<td class="stick">' + inp('capital', id, 'project', c.project || '', 'text', { list: 'dl-proj', label: 'Project' }) + '</td>' +
+      '<td>' + inp('capital', id, 'type', c.type || '', 'text', { list: 'dl-captype', label: 'Capital type' }) + '</td>' +
+      '<td>' + inp('capital', id, 'description', c.description || '', 'text', { label: 'Description' }) + '</td>' +
+      '<td>' + inp('capital', id, 'amount', c.amount, 'money', { right: true, label: 'Amount' }) + '</td>' +
+      '<td class="' + (undated ? 'warncell' : '') + '">' + inp('capital', id, 'due', c.due, 'date', { label: 'Due date' }) + '</td>' +
+      '<td>' + sel('capital', id, 'dateType', c.dateType || 'TBD', DATE_TYPES.concat(['Contracted', 'Actual / Contracted']), { label: 'Date type' }) + '</td>' +
+      '<td>' + sel('capital', id, 'include', c.include || 'Yes', ['Yes', 'No'], { label: 'Include in forecast' }) + '</td>' +
+      '<td>' + inp('capital', id, 'notes', c.notes || '', 'text', { label: 'Notes' }) + '</td>' +
+      '<td>' + (state.readOnly ? '' : '<button class="x' + (ui.confirm === key ? ' sure' : '') + '" data-act="del" data-coll="capital" data-id="' + esc(id) + '" aria-label="Delete ' + esc(id) + '">' + (ui.confirm === key ? 'Delete?' : 'Remove') + '</button>') + '</td></tr>';
+  }).join('');
+  const table = caps.length ? '<div class="tbl-wrap" data-scroll="cap"><table><thead><tr><th class="stick w-name">Project</th><th class="w-status">Type</th><th class="w-notes">Description</th><th class="r w-money">Amount</th><th class="w-date">Due date</th><th class="w-sm">Date type</th><th class="w-sm">Include?</th><th class="w-notes">Notes</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>'
+    : dimBlock('No capital events yet', 'Add each land purchase or design payment with its due date.', state.readOnly ? '' : '<button class="btn primary" data-act="add-capital">Add capital event</button>');
+  const names = Array.from(new Set(state.projects.map(p => p.name))).sort();
+  return head('Capital plan', 'Cash needed for land, design and preconstruction, by due date. These amounts are entered by hand. Only events marked Include with a due date reach the monthly totals.',
+    state.readOnly ? '' : '<button class="btn primary" data-act="add-capital">Add capital event</button>') +
+    tiles +
+    '<section class="card" style="margin-bottom:16px"><div class="card-h"><div><h2>Capital due by month</h2></div>' + chartToggle('capx') + '</div>' + chartSlot('capx') + '</section>' + table +
+    '<datalist id="dl-proj">' + names.map(n => '<option value="' + esc(n) + '">').join('') + '</datalist><datalist id="dl-captype">' + CAP_TYPES.map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>';
+}
+function capitalDetailChart(sum, w) {
+  const ms = capitalMonths(sum), i0 = k => ms[k] - sum.ctx.first;
+  const land = ms.map((m, k) => sum.capLand[i0(k)]), des = ms.map((m, k) => sum.capDesign[i0(k)]);
+  if (ui.tables.capx) {
+    return dataTable(['Month', 'Land', 'Design and preconstruction', 'Total'], ms.map((m, k) => [E.miLong(m), usd(land[k]), usd(des[k]), usd(land[k] + des[k])]).filter(r => r[3] !== '$0'));
+  }
+  if (!land.concat(des).some(v => v > 0)) return '<div class="empty-chart">No included capital has a due date in this period.</div>';
+  const tip = k => tipHtml(E.miLong(ms[k]), [{ name: 'Land', val: usdc(land[k]), color: 'var(--accent)' }, { name: 'Design and preconstruction', val: usdc(des[k]), color: 'var(--s4)' }, { name: 'Total', val: usdc(land[k] + des[k]) }]);
+  return legendHtml([{ name: 'Land', color: 'var(--accent)' }, { name: 'Design and preconstruction', color: 'var(--s4)' }]) +
+    columnsChart({ w, h: 250, labels: ms.map(m => E.miLabel(m, true)), stacks: [{ name: 'Land', color: 'var(--accent)', vals: land }, { name: 'Design', color: 'var(--s4)', vals: des }], tip, labels_mode: 'nonzero', title: 'Capital due by month' });
+}
+
+/* ----- Schedule what-if ----- */
+function scenActive() { const s = ui.scen; return s.delay !== 0 || s.extend !== 0 || Object.keys(s.per).some(k => s.per[k] && (s.per[k].start || s.per[k].end)); }
+function viewSchedule(sum) {
+  const sc = ui.scen;
+  const controls = '<section class="card" id="scen-controls"><div class="card-h"><div><h2>What if schedules move?</h2><p class="lead">Move dates here to see the effect. Nothing on this page changes your saved plan.</p></div><button class="btn small" data-act="scen-reset">Reset</button></div>' +
+    '<div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">' +
+    '<div class="field"><label for="sl-delay">Delay projects that have not started</label><div class="range-row"><input type="range" id="sl-delay" min="0" max="12" step="1" value="' + sc.delay + '" data-live data-scen="delay"><output id="o-delay">' + sc.delay + ' mo</output></div><span class="hint">The whole job slides later. Jobs already under construction keep their start.</span></div>' +
+    '<div class="field"><label for="sl-extend">Push every finish date</label><div class="range-row"><input type="range" id="sl-extend" min="-3" max="12" step="1" value="' + sc.extend + '" data-live data-scen="extend"><output id="o-extend">' + (sc.extend > 0 ? '+' : '') + sc.extend + ' mo</output></div><span class="hint">Stretches remaining work over a longer period. Applies to every project with dates.</span></div></div></section>';
+  return head('Schedule what-if', 'Construction dates drive when revenue lands. Test how late starts and slow finishes move revenue across years.') +
+    controls + '<div id="scen-results"></div>';
+}
+function scenResults() {
+  const base = summary(null), sc = summary(ui.scen), gy = base.s.goalYear, goal = base.s.goal;
+  charts = [{ id: 'scen', build: w => scenChart(base, sc, w) }, { id: 'gantt', build: w => gantt(base, sc, w) }];
+  const d = sc.yearBase - base.yearBase, active = scenActive();
+  const moved = sc.rows.filter((r, i) => Math.abs(r.yearRev - base.rows[i].yearRev) > 1);
+  const tiles = '<div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:16px 0">' +
+    tile('Plan: ' + gy + ' revenue', usdc(base.yearBase), pctS(base.yearBase / goal) + ' of the ' + usdc(goal) + ' goal') +
+    tile('Scenario: ' + gy + ' revenue', usdc(sc.yearBase), '<span class="delta ' + (d >= 0 ? 'good' : 'bad') + '">' + (d >= 0 ? '+' : '-') + usdc(Math.abs(d)) + ' vs plan</span> · ' + pctS(sc.yearBase / goal) + ' of goal') +
+    tile('Pushed past ' + gy, usdc(sc.afterYear), (sc.afterYear - base.afterYear >= 0 ? '+' : '-') + usdc(Math.abs(sc.afterYear - base.afterYear)) + ' vs plan') +
+    tile('Projects with changed ' + gy + ' revenue', String(moved.length), active ? 'out of ' + sc.rows.filter(r => !r.undated).length + ' with dates' : 'Move a slider to see the effect') + '</div>';
+  const callout = !active ? '' : (sc.yearBase < goal && base.yearBase >= goal
+    ? '<div class="callout" style="margin-bottom:16px"><b>This scenario drops ' + gy + ' revenue below the goal.</b> The plan is ' + usdc(base.yearBase - goal) + ' ahead; the scenario is ' + usdc(goal - sc.yearBase) + ' short. Capital due dates do not move with this scenario, so the cash gap would widen.</div>'
+    : '<div class="callout" style="margin-bottom:16px">Capital due dates do not move with this scenario. Check the Margin &amp; funding page if schedules slip.</div>');
+  const rows = sc.rows.map((r, i) => ({ r, b: base.rows[i] })).filter(x => !x.r.undated || !x.b.undated);
+  const table = rows.length ? '<div class="tbl-wrap" data-scroll="scen"><table><thead><tr><th class="stick w-name">Project</th><th class="w-sm">Plan finish</th><th class="w-sm">Scenario finish</th><th class="r w-money">Plan ' + gy + '</th><th class="r w-money">Scenario ' + gy + '</th><th class="r w-money">Change</th><th class="r w-pct">Start +mo</th><th class="r w-pct">Finish +mo</th></tr></thead><tbody>' +
+    rows.map(({ r, b }) => {
+      const ps = ui.scen.per[r.p.id] || {}, ch = r.yearRev - b.yearRev, started = r.sch.started;
+      return '<tr class="' + (r.counts ? '' : 'dim') + '"><td class="stick">' + esc(r.p.name) + (started ? '<span class="tag">in progress</span>' : '') + '</td>' +
+        '<td>' + (b.sch.endM != null ? E.miLong(b.sch.endM) : '') + '</td><td>' + (r.sch.endM != null ? E.miLong(r.sch.endM) : '') + '</td>' +
+        '<td class="num">' + usd(b.yearRev) + '</td><td class="num">' + usd(r.yearRev) + '</td><td class="num ' + (Math.abs(ch) < 1 ? '' : ch > 0 ? 'delta good' : 'delta bad') + '">' + (Math.abs(ch) < 1 ? '' : (ch > 0 ? '+' : '-') + usd(Math.abs(ch)).replace('-', '')) + '</td>' +
+        '<td>' + (started || r.undated ? '<span class="muted">n/a</span>' : inp('scen', r.p.id, 'start', ps.start || 0, 'num', { right: true, label: 'Start shift in months for ' + r.p.name, disabled: '' })) + '</td>' +
+        '<td>' + (r.undated ? '<span class="muted">n/a</span>' : inp('scen', r.p.id, 'end', ps.end || 0, 'num', { right: true, label: 'Finish shift in months for ' + r.p.name, disabled: '' })) + '</td></tr>';
+    }).join('') + '</tbody></table></div>' : '';
+  return tiles + callout +
+    '<section class="card"><div class="card-h"><div><h2>Monthly revenue: plan against scenario</h2></div>' + chartToggle('scen') + '</div>' + chartSlot('scen') + '</section>' +
+    '<section class="card"><div class="card-h"><div><h2>Construction schedule</h2><p class="lead">Bars run from start to completion. Where the scenario moves a job, the outline shows the plan.</p></div></div><div class="scroll-x">' + chartSlot('gantt') + '</div></section>' +
+    '<section class="card"><div class="card-h"><div><h2>Adjust individual projects</h2><p class="lead">Add months to one project\'s start or finish. Whole numbers; negative moves it earlier.</p></div></div>' + table + '</section>';
+}
+function scenChart(base, sc, w) {
+  const ym = base.yearMonths, goal = base.s.goal / 12, a = base.pick(base.base), b = sc.pick(sc.base);
+  if (ui.tables.scen) return dataTable(['Month', 'Plan', 'Scenario', 'Change'], ym.map((m, i) => [E.miLong(m), usd(a[i]), usd(b[i]), usd(b[i] - a[i])]), ['Total', usd(base.yearBase), usd(sc.yearBase), usd(sc.yearBase - base.yearBase)]);
+  const tip = i => tipHtml(E.miLong(ym[i]), [{ name: 'Scenario', val: usdc(b[i]), color: 'var(--s1)' }, { name: 'Plan', val: usdc(a[i]), color: 'var(--s4)' }, { name: 'Monthly goal', val: usdc(goal), color: 'var(--ink)' }], (b[i] - a[i] >= 0 ? '+' : '-') + usdc(Math.abs(b[i] - a[i])) + ' vs plan');
+  return legendHtml([{ name: 'Scenario', color: 'var(--s1)', line: true }, { name: 'Plan', color: 'var(--s4)', line: true }, { name: 'Monthly goal', color: 'var(--ink)', line: true }]) +
+    linesChart({ w, h: 260, labels: ym.map(m => E.miLabel(m)), series: [{ name: 'Plan', color: 'var(--s4)', vals: a }, { name: 'Scenario', color: 'var(--s1)', vals: b }], hline: goal, tip, title: 'Plan against scenario' });
+}
+function gantt(base, sc, w) {
+  const ctx = sc.ctx, rs = sc.rows.map((r, i) => ({ r, b: base.rows[i] })).filter(x => !x.r.undated || !x.b.undated);
+  const undated = sc.rows.filter(r => r.undated);
+  const rangeStart = Math.floor(ctx.asOfM / 12) * 12;
+  let rangeEnd = rangeStart + 23;
+  rs.forEach(x => { if (x.r.sch.endM != null) rangeEnd = Math.max(rangeEnd, x.r.sch.endM); if (x.b.sch.endM != null) rangeEnd = Math.max(rangeEnd, x.b.sch.endM); });
+  rangeEnd = Math.ceil((rangeEnd + 1) / 3) * 3 - 1;
+  const nM = rangeEnd - rangeStart + 1, labelW = 170, rowH = 24, topH = 34;
+  const mw = Math.max(13, (w - labelW - 10) / nM), W = labelW + nM * mw + 10, H = topH + rs.length * rowH + 8;
+  const X = m => labelW + (m - rangeStart) * mw;
+  let g = '';
+  const gyS = ctx.yearStart, gyE = ctx.yearEnd + 1;
+  g += '<rect x="' + X(Math.max(gyS, rangeStart)) + '" y="' + topH + '" width="' + (X(Math.min(gyE, rangeEnd + 1)) - X(Math.max(gyS, rangeStart))) + '" height="' + (rs.length * rowH) + '" style="fill:var(--surface2);fill-opacity:.7"/>';
+  for (let m = rangeStart; m <= rangeEnd + 1; m += 3) {
+    g += '<line class="grid" x1="' + X(m) + '" x2="' + X(m) + '" y1="' + (m % 12 === 0 ? 4 : topH - 6) + '" y2="' + (topH + rs.length * rowH) + '"/>';
+    if (m <= rangeEnd) g += '<text class="tick" x="' + (X(m) + 3) + '" y="' + (m % 12 === 0 ? 16 : topH - 10) + '" ' + (m % 12 === 0 ? 'style="font-weight:600;fill:var(--ink2)"' : '') + '>' + (m % 12 === 0 ? E.miYear(m) : 'Q' + ((E.miMonth(m) - 1) / 3 + 1)) + '</text>';
+  }
+  rs.forEach((x, i) => {
+    const r = x.r, b = x.b, y = topH + i * rowH, bh = 10, by = y + (rowH - bh) / 2;
+    const label = r.p.name.length > 25 ? r.p.name.slice(0, 24) + '…' : r.p.name;
+    g += '<text class="tick" x="' + (labelW - 8) + '" y="' + (y + rowH / 2 + 4) + '" text-anchor="end" style="fill:var(--ink2)">' + esc(label) + '</text>';
+    const col = catColor(r.p.category), op = r.counts ? 1 : .45;
+    const geo = s => s.startM != null && s.endM != null ? { x1: X(Math.max(s.startM, rangeStart)), x2: X(s.endM + 1) } : null;
+    const gb = geo(b.sch), gs = geo(r.sch);
+    const moved = gb && gs && (Math.abs(gb.x1 - gs.x1) > .5 || Math.abs(gb.x2 - gs.x2) > .5);
+    if (moved) g += '<rect x="' + gb.x1 + '" y="' + by + '" width="' + Math.max(2, gb.x2 - gb.x1) + '" height="' + bh + '" rx="4" style="fill:none;stroke:' + col + ';stroke-width:1.5;opacity:.8"/>';
+    if (gs) g += '<rect x="' + gs.x1 + '" y="' + by + '" width="' + Math.max(2, gs.x2 - gs.x1) + '" height="' + bh + '" rx="4" style="fill:' + col + ';opacity:' + op + '"/>';
+    const tp = tipHtml(r.p.name, [{ name: 'Start', val: r.sch.startM != null ? E.miLong(r.sch.startM) : 'not set' }, { name: 'Finish', val: r.sch.endM != null ? E.miLong(r.sch.endM) : 'not set' }, { name: 'Remaining', val: usdc(r.remaining) }, { name: ctx.s.goalYear + ' revenue', val: usdc(r.yearRev) }], moved ? 'Plan finish ' + esc(E.miLong(b.sch.endM)) : '');
+    g += '<rect class="hit" x="' + labelW + '" y="' + y + '" width="' + (W - labelW) + '" height="' + rowH + '" tabindex="0" role="img" ' + tipAttr(tp) + '/>';
+  });
+  const ax = X(ctx.first);
+  g += '<line x1="' + ax + '" x2="' + ax + '" y1="' + (topH - 6) + '" y2="' + (topH + rs.length * rowH) + '" style="stroke:var(--ink);stroke-width:1.5"/><text class="note" x="' + (ax + 4) + '" y="' + (topH + rs.length * rowH + 2) + '" style="font-size:10px"></text>';
+  const legend = legendHtml(CATS.map(c => ({ name: c, color: catColor(c) })).concat([{ name: 'Forecast starts ' + E.miLong(ctx.first), color: 'var(--ink)', line: true }]));
+  return legend + '<div style="min-width:' + Math.round(W) + 'px"><svg viewBox="0 0 ' + Math.round(W) + ' ' + Math.round(H) + '" style="width:' + Math.round(W) + 'px;max-width:none" role="group" aria-label="Construction schedule">' + g + '</svg></div>' +
+    (undated.length ? '<p class="note-txt">No dates yet, so not drawn: ' + esc(undated.map(r => r.p.name).join(', ')) + '.</p>' : '');
+}
+
+/* ----- Margin & funding ----- */
+function viewMargin(sum) {
+  const s = sum.s, gy = s.goalYear;
+  charts = [{ id: 'fund', build: w => fundChart(sum, w) }];
+  const useW = s.useWeighted !== false;
+  const last = sum.fund[sum.fund.length - 1] || { cm: 0, cc: 0, capOnly: 0 };
+  const controls = '<section class="card"><div class="card-h"><div><h2>Margin assumptions</h2><p class="lead">The workbook tracks contract value only. Enter what is left after subcontractors and vendors, and this page shows how much of the capital plan the work can fund.</p></div></div>' +
+    '<div class="form-grid"><div class="field"><label for="f-margin">Company gross margin</label>' + inp('settings', 'main', 'margin', s.margin, 'pctnull', { right: true, placeholder: 'e.g. 12', label: 'Company gross margin percent' }).replace('class="in r"', 'class="ctl"') + '<span class="hint">Percent of revenue left after construction costs. Used for every project without its own margin below.</span></div>' +
+    '<div class="field"><label>Monthly overhead</label>' + inp('settings', 'main', 'overhead', s.overhead, 'money', { right: true, label: 'Monthly overhead' }).replace('class="in r"', 'class="ctl"') + '<span class="hint">Optional. Company costs that margin must also cover each month.</span></div>' +
+    '<div class="field"><label>Count revenue at</label><select class="ctl" data-edit data-coll="settings" data-id="main" data-field="useWeighted" data-type="bool" data-fk="settings:main:useWeighted" ' + ro() + '><option value="true"' + (useW ? ' selected' : '') + '>Weighted by confidence</option><option value="false"' + (!useW ? ' selected' : '') + '>Base forecast</option></select><span class="hint">Weighted is the safer basis for borrowing decisions.</span></div></div></section>';
+  let summaryHtml;
+  if (sum.marginSet) {
+    const covered = last.capOnly > 0 ? Math.min(1, last.cm / (last.capOnly + (last.cc - last.capOnly))) : 1;
+    summaryHtml = '<div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:16px 0">' +
+      tile('Margin earned through ' + gy, usdc(last.cm), 'From ' + E.miLong(sum.ctx.first) + ' to December ' + gy) +
+      tile('Capital and overhead due', usdc(last.cc), usdc(last.capOnly) + ' capital' + (nz(s.overhead) ? ' plus ' + usdc(last.cc - last.capOnly) + ' overhead' : '')) +
+      tile('Most outside funding needed', usdc(sum.peakShortfall), sum.peakShortfall > 0 ? 'Peaks in ' + E.miLong(sum.peakAt) : 'Margin covers every payment on time') +
+      tile('Capital covered by margin', last.cc > 0 ? pctS(covered) : 'n/a', 'By December ' + gy + ', cumulative') + '</div>';
+  } else {
+    summaryHtml = '<div class="callout" style="margin:16px 0"><b>Enter a gross margin above to see the funding picture.</b> Until then this page can only show capital due. Revenue and margin are treated as arriving as the work is completed, which is simpler than real payment timing, so read the result as a planning estimate.</div>';
+  }
+  const rows = sum.rows.filter(r => r.counts).map(r => {
+    const mp = E.marginPct(r.p, s);
+    const eff = mp == null ? '' : usdc(r.remaining * mp);
+    return '<tr><td class="stick">' + esc(r.p.name) + '</td><td>' + esc(r.p.category) + '</td><td class="num">' + usd(r.remaining) + '</td><td>' + inp('projects', r.p.id, 'margin', r.p.margin, 'pctnull', { right: true, placeholder: s.margin != null ? pctS(s.margin, 1).replace('%', '') + ' (default)' : 'default', label: 'Margin percent for ' + r.p.name }) + '</td><td class="num">' + eff + '</td><td class="num">' + (mp == null ? '' : usd(r.yearRev * mp)) + '</td></tr>';
+  }).join('');
+  return head('Margin and funding', 'What the work leaves after costs, set against the capital the plan calls for.') + controls + summaryHtml +
+    '<section class="card" style="margin-bottom:16px"><div class="card-h"><div><h2>Margin earned against capital due</h2><p class="lead">Running totals from ' + E.miLong(sum.ctx.first) + '. The shaded band is cash the company must raise or fund from reserves.</p></div>' + chartToggle('fund') + '</div>' + chartSlot('fund') + '</section>' +
+    '<section class="card"><div class="card-h"><div><h2>Margin by project</h2><p class="lead">Leave a margin blank to use the company figure. Projects that do not count toward the goal are left out.</p></div></div>' +
+    '<div class="tbl-wrap" data-scroll="mrg"><table><thead><tr><th class="stick w-name">Project</th><th class="w-cat">Category</th><th class="r w-money">Remaining value</th><th class="r w-money">Margin %</th><th class="r w-money">Margin left to earn</th><th class="r w-money">Margin in ' + gy + '</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+}
+function fundChart(sum, w) {
+  const f = sum.fund; if (!f.length) return '<div class="empty-chart">No months to show.</div>';
+  const labels = f.map(x => E.miLabel(x.m, true));
+  if (ui.tables.fund) return dataTable(['Month', 'Cumulative margin', 'Cumulative capital and overhead', 'Position'], f.map(x => [E.miLong(x.m), usd(x.cm), usd(x.cc), usd(x.bal)]));
+  const tip = i => tipHtml(E.miLong(f[i].m), (sum.marginSet ? [{ name: 'Margin earned', val: usdc(f[i].cm), color: 'var(--s1)' }] : []).concat([{ name: 'Capital and overhead', val: usdc(f[i].cc), color: 'var(--s2)' }]),
+    sum.marginSet ? (f[i].bal >= 0 ? 'Margin is ' + usdc(f[i].bal) + ' ahead' : 'Needs ' + usdc(-f[i].bal) + ' of outside funding') : '');
+  const series = []; if (sum.marginSet) series.push({ name: 'Margin earned', color: 'var(--s1)', vals: f.map(x => x.cm) });
+  series.push({ name: 'Capital and overhead', color: 'var(--s2)', vals: f.map(x => x.cc) });
+  const o = { w, h: 270, labels, series, tip, title: 'Margin against capital' };
+  if (sum.marginSet) {
+    o.shade = { hi: f.map(x => x.cc), lo: f.map(x => x.cm) };
+    if (sum.peakShortfall > 0) { const i = f.findIndex(x => x.m === sum.peakAt); o.mark = { i, v: f[i].cc, text: 'Largest gap ' + usdc(sum.peakShortfall) }; }
+  }
+  return legendHtml(series.map(s => ({ name: s.name, color: s.color, line: true }))) + linesChart(o);
+}
+
+/* ----- Checks & settings ----- */
+function viewChecks(sum) {
+  const s = sum.s, cks = E.checks(sum, projectsSorted(), capitalSorted());
+  charts = [{ id: 'curve', build: w => curveChart(s, w) }];
+  const list = cks.map(c => {
+    const kind = c.info ? 'info' : c.ok ? 'good' : 'warn';
+    return '<div class="att-row">' + ATT_ICONS[kind] + '<div><div class="att-t">' + esc(c.title) + ' ' + (c.info ? '<span class="tag">Note</span>' : c.ok ? '<span class="tag">Pass</span>' : '<span class="tag">Review: ' + c.count + '</span>') + '</div><div class="att-d">' + esc(c.detail) + '</div></div>' +
+      (c.ok && !c.info ? '<span></span>' : '<button class="btn small" data-go="' + c.fix + '">Open</button>') + '</div>';
+  }).join('');
+  const f = (label, hint, html) => '<div class="field"><label>' + esc(label) + '</label>' + html.replace('class="in r"', 'class="ctl"').replace('class="in"', 'class="ctl"') + (hint ? '<span class="hint">' + esc(hint) + '</span>' : '') + '</div>';
+  const bad = s.earlyEnd >= s.midEnd;
+  const settingsForm = '<section class="card"><div class="card-h"><div><h2>Model settings</h2><p class="lead">Every forecast on every page reads from these.</p></div></div><div class="form-grid">' +
+    f('Goal year', 'The year the dashboard reports on', inp('settings', 'main', 'goalYear', s.goalYear, 'num', { right: true, label: 'Goal year' })) +
+    f('Revenue goal', 'Dollars for the goal year', inp('settings', 'main', 'goal', s.goal, 'money', { right: true, label: 'Revenue goal' })) +
+    f('Forecast as-of date', 'Percent complete is measured on this date', inp('settings', 'main', 'asOf', s.asOf, 'date', { label: 'Forecast as-of date' })) +
+    f('Early phase ends at', 'Share of the job duration', inp('settings', 'main', 'earlyEnd', s.earlyEnd, 'pct', { right: true, label: 'Early phase ends percent' })) +
+    f('Middle phase ends at', 'Share of the job duration', inp('settings', 'main', 'midEnd', s.midEnd, 'pct', { right: true, label: 'Middle phase ends percent' })) +
+    f('Early phase weight', 'Slow start', inp('settings', 'main', 'wEarly', s.wEarly, 'num', { right: true, label: 'Early phase weight' })) +
+    f('Middle phase weight', 'Peak activity', inp('settings', 'main', 'wMid', s.wMid, 'num', { right: true, label: 'Middle phase weight' })) +
+    f('Late phase weight', 'Taper at the end', inp('settings', 'main', 'wLate', s.wLate, 'num', { right: true, label: 'Late phase weight' })) +
+    '</div>' + (bad ? '<p class="note-txt" style="color:var(--bad-ink)">The early phase must end before the middle phase.</p>' : '') + '</section>';
+  const curve = '<section class="card"><div class="card-h"><div><h2>How a job spreads its revenue</h2><p class="lead">A 12-month job under the current phase weights. Each project\'s remaining value is split across its months in these proportions.</p></div></div>' + chartSlot('curve') + '</section>';
+  return head('Checks and settings', 'Data-quality checks, and the numbers behind the forecast.') +
+    '<section class="card"><div class="card-h"><div><h2>Model checks</h2></div></div><div class="att">' + list + '</div></section>' +
+    '<div class="two" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">' + settingsForm + curve + '</div>';
+}
+function curveChart(s, w) {
+  const n = 12, wts = []; for (let i = 1; i <= n; i++) { const r = i / n; wts.push(r <= s.earlyEnd ? s.wEarly : r <= s.midEnd ? s.wMid : s.wLate); }
+  const sum = wts.reduce((a, b) => a + b, 0), share = wts.map(x => sum ? x / sum : 0);
+  const W = Math.max(280, w), H = 220, L = 40, R = 8, T = 14, B = 28, pw = W - L - R, ph = H - T - B, band = pw / n, bw = Math.min(24, band * .6);
+  const mx = Math.max.apply(null, share.concat([0.01])) * 1.15, sc = niceScale(mx * 100, 4), y = v => T + ph - (v * 100) / sc.max * ph;
+  let g = '';
+  sc.ticks.forEach(t => { g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + (T + ph - t / sc.max * ph) + '" y2="' + (T + ph - t / sc.max * ph) + '"/><text class="tick" x="' + (L - 6) + '" y="' + (T + ph - t / sc.max * ph + 4) + '" text-anchor="end">' + Math.round(t) + '%</text>'; });
+  g += '<line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '"/>';
+  share.forEach((v, i) => {
+    const x = L + band * i + (band - bw) / 2, top = y(v);
+    g += '<path d="' + roundedTop(x, top, bw, y(0) - top, 4) + '" style="fill:var(--accent)"/>' +
+      '<text class="tick" x="' + (L + band * (i + .5)) + '" y="' + (H - B + 18) + '" text-anchor="middle">' + (i + 1) + '</text>' +
+      '<rect class="hit" x="' + (L + band * i) + '" y="' + T + '" width="' + band + '" height="' + ph + '" tabindex="0" role="img" ' + tipAttr(tipHtml('Month ' + (i + 1) + ' of 12', [{ name: 'Share of remaining value', val: pctS(v, 1), color: 'var(--accent)' }, { name: 'Weight', val: String(wts[i]) }])) + '/>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Share of revenue by month of a 12-month job">' + g + '</svg><p class="note-txt">Month of the job along the bottom, share of its remaining value up the side.</p>';
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function renderNav() {
+  const sum = state.loaded.p ? summary() : null;
+  const nIssues = sum ? E.checks(sum, projectsSorted(), capitalSorted()).filter(c => !c.ok).length : 0;
+  $('#nav').innerHTML = NAV.map(n => '<button class="nav-btn" data-go="' + n[0] + '"' + (n[0] === viewName ? ' aria-current="page"' : '') + '>' + ICONS[n[0] === 'schedule' ? 'schedule' : n[0]] + '<span>' + n[1] + '</span>' + (n[0] === 'checks' && nIssues ? '<span class="badge" aria-label="' + nIssues + ' checks to review">' + nIssues + '</span>' : '') + '</button>').join('');
+  const sy = $('#sync');
+  if (state.dbState !== 'ready') { sy.className = 'sync off'; sy.innerHTML = '<i></i><span>Not connected</span>'; }
+  else if (state.readOnly) { sy.className = 'sync off'; sy.innerHTML = '<i></i><span>View only</span>'; }
+  else if (state.saving > 0) { sy.className = 'sync busy'; sy.innerHTML = '<i></i><span>Saving</span>'; }
+  else { sy.className = 'sync'; sy.innerHTML = '<i></i><span>Live and saved</span>'; }
+}
+let rendering = false;
+function renderAll() {
+  const host = $('#view');
+  renderNav();
+  if (state.dbState === 'connecting') { host.innerHTML = dimBlock('Loading the shared plan', 'Connecting to the team data.'); charts = []; return; }
+  if (state.dbState !== 'ready') { host.innerHTML = dimBlock('Sign in to see the plan', 'This planner keeps its data in a shared team store. Sign in to view and edit the projects.'); charts = []; return; }
+  if (!(state.loaded.p && state.loaded.c && state.loaded.s)) { host.innerHTML = dimBlock('Loading the shared plan', 'Fetching projects and capital.'); charts = []; return; }
+  if (!state.projects.length && viewName !== 'projects' && viewName !== 'capital' && viewName !== 'checks' && viewName !== 'history') {
+    host.innerHTML = dimBlock('No projects yet', 'The plan is empty. Add a project and the dashboard fills in.', state.readOnly ? '' : '<button class="btn primary" data-act="add-project">Add the first project</button>'); charts = []; return;
+  }
+  // preserve scroll positions and focus
+  const scrolls = {}; $$('[data-scroll]', host).forEach(el => { scrolls[el.dataset.scroll] = [el.scrollLeft, el.scrollTop]; });
+  const a = document.activeElement; let fkey = ui.focusKey, sel = null;
+  if (!fkey && a && a.getAttribute && a.getAttribute('data-fk')) { fkey = a.getAttribute('data-fk'); try { sel = [a.selectionStart, a.selectionEnd]; } catch (e) {} }
+  ui.focusKey = null;
+  const sum = summary();
+  let html = '';
+  if (viewName === 'overview') html = viewOverview(sum);
+  else if (viewName === 'projects') html = viewProjects(sum);
+  else if (viewName === 'schedule') html = viewSchedule(sum);
+  else if (viewName === 'capital') html = viewCapital(sum);
+  else if (viewName === 'margin') html = viewMargin(sum);
+  else if (viewName === 'history') html = viewHistory();
+  else html = viewChecks(sum);
+  host.innerHTML = html;
+  if (viewName === 'history') loadHistory();
+  if (viewName === 'schedule') { $('#scen-results').innerHTML = scenResults(); }
+  $$('[data-scroll]', host).forEach(el => { const s = scrolls[el.dataset.scroll]; if (s) { el.scrollLeft = s[0]; el.scrollTop = s[1]; } });
+  runCharts();
+  if (fkey) {
+    const el = Array.from(host.querySelectorAll('[data-fk]')).find(x => x.getAttribute('data-fk') === fkey);
+    if (el) { el.focus({ preventScroll: true }); if (sel && el.setSelectionRange) { try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
+  }
+}
+let rt = null, pendingRender = false;
+function scheduleRender() {
+  if (rt) return;
+  rt = setTimeout(() => {
+    rt = null;
+    const a = document.activeElement;
+    if (a && a.matches && a.matches('input[data-edit]') && a.value !== a.defaultValue) { pendingRender = true; return; }
+    renderAll();
+  }, 0);
+}
+document.addEventListener('focusout', () => { if (pendingRender) { pendingRender = false; scheduleRender(); } });
+function renderScen() {
+  const host = $('#scen-results'); if (!host) return;
+  const a = document.activeElement, fkey = a && a.getAttribute && a.getAttribute('data-fk');
+  const sc = {}; $$('[data-scroll]', host).forEach(el => { sc[el.dataset.scroll] = [el.scrollLeft, el.scrollTop]; });
+  host.innerHTML = scenResults();
+  $$('[data-scroll]', host).forEach(el => { const s = sc[el.dataset.scroll]; if (s) { el.scrollLeft = s[0]; el.scrollTop = s[1]; } });
+  runCharts();
+  if (fkey && fkey.indexOf('scen:') === 0) { const el = Array.from(host.querySelectorAll('[data-fk]')).find(x => x.getAttribute('data-fk') === fkey); if (el) el.focus({ preventScroll: true }); }
+}
+
+/* =====================================================================
+   WRITES
+   ===================================================================== */
+const queues = new Map();
+function enqueue(path, fn) {
+  const prev = queues.get(path) || Promise.resolve();
+  const next = prev.catch(() => {}).then(fn);
+  queues.set(path, next);
+  next.catch(() => {}).then(() => { if (queues.get(path) === next) queues.delete(path); });
+  return next;
+}
+function applyLocal(coll, id, patch) {
+  if (coll === 'settings') { Object.assign(state.settings, patch); return; }
+  const arr = coll === 'projects' ? state.projects : state.capital;
+  const row = arr.find(x => x.id === id); if (row) Object.assign(row, patch);
+}
+function noteSaving(d) { state.saving = Math.max(0, state.saving + d); renderNav(); }
+function writeFailed(e) {
+  console.error(e);
+  const code = e && e.code;
+  toast(code === 'quota_exceeded' ? 'The shared database is full, so that could not be saved.' : code === 'resource_exhausted' ? 'Too many changes at once. Try again in a moment.' : 'That change could not be saved. You may have view-only access.');
+}
+async function saveField(coll, id, field, value, extra) {
+  if (state.readOnly || !state.db) return;
+  const patch = Object.assign({ [field]: value }, extra || {});
+  applyLocal(coll, id, patch); scheduleRender();
+  noteSaving(1);
+  try {
+    if (coll === 'settings') {
+      const doc = Object.assign({}, S(), state.settings);
+      await enqueue('settings/main', () => state.db.doc('settings/main').set(Object.assign({}, doc, { updatedAt: Date.now(), updatedBy: state.uid })));
+    } else {
+      await enqueue(coll + '/' + id, () => state.db.doc(coll + '/' + id).update(Object.assign({}, patch, { updatedAt: Date.now(), updatedBy: state.uid })));
+    }
+  } catch (e) { writeFailed(e); } finally { noteSaving(-1); }
+}
+async function addDoc(coll, id, doc) {
+  if (state.readOnly || !state.db) return;
+  noteSaving(1);
+  try { await enqueue(coll + '/' + id, () => state.db.doc(coll + '/' + id).set(Object.assign({}, doc, { id, updatedAt: Date.now(), updatedBy: state.uid }))); }
+  catch (e) { writeFailed(e); } finally { noteSaving(-1); }
+}
+async function deleteDoc(coll, id) {
+  if (state.readOnly || !state.db) return;
+  noteSaving(1);
+  try { await enqueue(coll + '/' + id, () => state.db.doc(coll + '/' + id).delete()); }
+  catch (e) { writeFailed(e); } finally { noteSaving(-1); }
+}
+function nextId(coll, prefix) {
+  const arr = coll === 'projects' ? state.projects : state.capital;
+  let n = 0; arr.forEach(x => { const m = new RegExp('^' + prefix + '-(\\d+)$').exec(x.id); if (m) n = Math.max(n, +m[1]); });
+  return prefix + '-' + String(n + 1).padStart(2, '0');
+}
+function parseVal(type, raw) {
+  raw = String(raw == null ? '' : raw);
+  const f = parseFloat(raw.replace(/[^0-9.\-]/g, ''));
+  switch (type) {
+    case 'text': return raw.trim();
+    case 'money': return isFinite(f) ? f : 0;
+    case 'num': return raw.trim() === '' ? null : (isFinite(f) ? f : null);
+    case 'pct': return isFinite(f) ? Math.min(1, Math.max(0, f / 100)) : 0;
+    case 'pctnull': return raw.trim() === '' || !isFinite(f) ? null : Math.min(1, Math.max(0, f / 100));
+    case 'date': return raw || null;
+    case 'bool': return raw === 'true';
+    default: return raw;
+  }
+}
+
+/* =====================================================================
+   EVENTS
+   ===================================================================== */
+const viewHost = $('#view');
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.matches('[data-ui]')) return;
+  if (!t.matches('[data-edit]')) return;
+  const coll = t.dataset.coll, id = t.dataset.id, field = t.dataset.field, type = t.dataset.type;
+  if (coll === 'scen') {
+    let v = parseVal('num', t.value); v = v == null ? 0 : Math.round(v);
+    const per = ui.scen.per[id] || (ui.scen.per[id] = {}); per[field] = v;
+    setTimeout(renderScen, 0); return;
+  }
+  let v = parseVal(type, t.value);
+  if (coll === 'settings' && field === 'goalYear') { v = Math.round(nz(v)); if (v < 2000 || v > 2100) { toast('Enter a four-digit year.'); scheduleRender(); return; } }
+  if (coll === 'settings' && field === 'goal') v = Math.max(0, nz(v));
+  if (coll === 'projects' && (field === 'name') && !v) { toast('A project needs a name.'); scheduleRender(); return; }
+  if (coll === 'projects' && field === 'units' && v != null) v = Math.round(v);
+  if (coll === 'projects' && field === 'contract') v = Math.max(0, nz(v));
+  let extra = null;
+  if (coll === 'projects') {
+    const p = state.projects.find(x => x.id === id);
+    if (p && field === 'start') extra = { startType: v ? (p.startType === 'TBD' || !p.startType ? 'Estimated' : p.startType) : 'TBD' };
+    if (p && field === 'completion') extra = { completionType: v ? (p.completionType === 'TBD' || !p.completionType ? 'Estimated' : p.completionType) : 'TBD' };
+  }
+  if (coll === 'capital' && field === 'due') {
+    const c = state.capital.find(x => x.id === id);
+    if (c) extra = { dateType: v ? (c.dateType === 'TBD' || !c.dateType ? 'Estimated' : c.dateType) : 'TBD' };
+  }
+  saveField(coll, id, field, v, extra);
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.matches('[data-scen]')) {
+    const k = t.dataset.scen, v = parseInt(t.value, 10) || 0; ui.scen[k] = v;
+    const o = document.getElementById('o-' + k); if (o) o.textContent = (k === 'extend' && v > 0 ? '+' : '') + v + ' mo';
+    renderScen(); return;
+  }
+  if (t.matches('[data-ui="q"]')) { ui.q = t.value; ui.focusKey = 'ui:q'; scheduleRender(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!t.matches('[data-ui]')) return;
+  if (t.dataset.ui === 'cat') ui.cat = t.value;
+  if (t.dataset.ui === 'all') ui.all = t.checked;
+  scheduleRender();
+});
+document.addEventListener('click', e => {
+  const t = e.target.closest ? e.target.closest('[data-go],[data-act]') : null;
+  if (ui.confirm && !(t && t.dataset.act === 'del')) { ui.confirm = null; scheduleRender(); }
+  if (!t) return;
+  if (t.dataset.go) { setView(t.dataset.go); return; }
+  const act = t.dataset.act;
+  if (act === 'tbl') { ui.tables[t.dataset.id] = !ui.tables[t.dataset.id]; scheduleRender(); return; }
+  if (act === 'scen-reset') { ui.scen = { delay: 0, extend: 0, per: {} }; scheduleRender(); return; }
+  if (act === 'del') {
+    const key = t.dataset.coll + ':' + t.dataset.id;
+    if (ui.confirm === key) { ui.confirm = null; deleteDoc(t.dataset.coll, t.dataset.id); }
+    else { ui.confirm = key; scheduleRender(); }
+    return;
+  }
+  if (act === 'add-project') {
+    const cat = ui.cat !== 'All' ? ui.cat : 'Multifamily', id = nextId('projects', PREFIX[cat] || 'PR');
+    const order = state.projects.reduce((a, p) => Math.max(a, nz(p.order)), 0) + 10;
+    addDoc('projects', id, { order, category: cat, name: 'New project', location: '', units: null, status: 'Scheduled', confidence: 1, counts: 'Yes', internal: 'No', contract: 0, start: null, completion: null, pctComplete: 0, startType: 'TBD', completionType: 'TBD', notes: '' });
+    state.projects.push({ id, order, category: cat, name: 'New project', status: 'Scheduled', confidence: 1, counts: 'Yes', internal: 'No', contract: 0, start: null, completion: null, pctComplete: 0, startType: 'TBD', completionType: 'TBD', notes: '', location: '', units: null });
+    ui.focusKey = fk('projects', id, 'name'); if (viewName !== 'projects') viewName = 'projects'; scheduleRender();
+    setTimeout(() => { const el = document.querySelector('[data-fk="' + fk('projects', id, 'name') + '"]'); if (el) { el.scrollIntoView({ block: 'center' }); el.select && el.select(); } }, 60);
+    return;
+  }
+  if (act === 'add-capital') {
+    const id = nextId('capital', 'CAP');
+    const doc = { project: '', category: 'Multifamily', type: 'Land', description: '', amount: 0, due: null, dateType: 'TBD', confidence: 1, include: 'No', notes: 'Enter a due date, then set Include to Yes' };
+    addDoc('capital', id, doc); state.capital.push(Object.assign({ id }, doc));
+    ui.focusKey = fk('capital', id, 'project'); scheduleRender();
+    return;
+  }
+  if (act === 'export-forecast') exportForecast();
+  if (act === 'export-projects') exportProjects();
+});
+function setView(v) {
+  if (!NAV.some(n => n[0] === v)) return;
+  viewName = v; ui.confirm = null;
+  try { localStorage.setItem('vcp-view', v); } catch (e) {}
+  scheduleRender(); window.scrollTo({ top: 0 });
+}
+let rz = null;
+window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(runCharts, 120); });
+
+/* ---------- exports ---------- */
+function csvCell(v) {
+  if (v == null) return '';
+  if (typeof v === 'number') return String(v);
+  let s = String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+async function saveCsv(name, rows) {
+  let dl = null; try { dl = window.claude && await claude.use('downloads'); } catch (e) {}
+  if (!dl) { toast('File downloads are not available in this view.'); return; }
+  try { await dl.save({ filename: name, data: rows.map(r => r.map(csvCell).join(',')).join('\n') }); toast('Saved ' + name); }
+  catch (e) { if (!e || e.code !== 'declined') toast('The file could not be saved.'); }
+}
+function exportForecast() {
+  const sum = summary(), ym = sum.yearMonths, gy = sum.s.goalYear;
+  const rows = [['Month', 'Multifamily', 'Subdivision', 'Custom Home', 'Base revenue', 'Weighted revenue', 'Monthly goal', 'Capital due']];
+  const pk = a => sum.pick(a);
+  ym.forEach((m, i) => rows.push([E.miLong(m), Math.round(pk(sum.byCat.Multifamily)[i]), Math.round(pk(sum.byCat.Subdivision)[i]), Math.round(pk(sum.byCat['Custom Home'])[i]), Math.round(pk(sum.base)[i]), Math.round(pk(sum.weighted)[i]), Math.round(sum.s.goal / 12), Math.round(pk(sum.capBy)[i])]));
+  rows.push([gy + ' total', '', '', '', Math.round(sum.yearBase), Math.round(sum.yearWeighted), Math.round(sum.s.goal), Math.round(sum.capYear)]);
+  saveCsv('Monthly forecast ' + gy + '.csv', rows);
+}
+function exportProjects() {
+  const sum = summary(), gy = sum.s.goalYear;
+  const rows = [['ID', 'Category', 'Project', 'Location', 'Units', 'Status', 'Confidence', 'Counts toward goal', 'Internal', 'Contract value', 'Construction start', 'Construction completion', 'Percent complete', 'Start date type', 'Completion date type', 'Remaining contract value', gy + ' revenue', 'Notes']];
+  sum.rows.forEach(r => { const p = r.p; rows.push([p.id, p.category, p.name, p.location, p.units, p.status, p.confidence, p.counts, p.internal, p.contract, p.start, p.completion, p.pctComplete, p.startType, p.completionType, Math.round(r.remaining), Math.round(r.yearRev), p.notes]); });
+  saveCsv('Projects.csv', rows);
+}
+
+
+/* =====================================================================
+   HISTORY (change log kept by the database)
+   ===================================================================== */
+function viewHistory() {
+  return head('History', 'Every change to projects, capital and settings, newest first. Kept by the database, so it survives for as long as the data does.',
+    '<button class="btn" id="hist-refresh">Refresh</button>') + '<div id="hist"><div class="empty-chart">Loading the change log.</div></div>';
+}
+const HIST_SKIP = { updatedAt: 1, updatedBy: 1, id: 1 };
+function histLabel(r) {
+  const d = r.new_data || r.old_data || {};
+  if (r.tbl === 'projects') return 'Project: ' + (d.name || r.row_id);
+  if (r.tbl === 'capital') return 'Capital: ' + [d.project, d.description].filter(Boolean).join(', ');
+  return 'Settings';
+}
+function histShow(v) { return v == null || v === '' ? 'empty' : typeof v === 'number' ? String(v) : String(v); }
+function histChange(r) {
+  if (r.op === 'INSERT') return 'Added';
+  if (r.op === 'DELETE') return 'Removed';
+  const a = r.old_data || {}, b = r.new_data || {}, out = [];
+  Object.keys(Object.assign({}, a, b)).forEach(k => { if (!HIST_SKIP[k] && JSON.stringify(a[k]) !== JSON.stringify(b[k])) out.push(k + ': ' + histShow(a[k]) + ' to ' + histShow(b[k])); });
+  return out.length > 3 ? out.slice(0, 3).join('; ') + '; and ' + (out.length - 3) + ' more' : out.join('; ') || 'No visible change';
+}
+async function loadHistory() {
+  const host = $('#hist'); if (!host) return;
+  const btn = $('#hist-refresh'); if (btn && !btn._bound) { btn._bound = true; btn.addEventListener('click', loadHistory); }
+  try {
+    const rows = await state.db.history(300);
+    if (viewName !== 'history' || !$('#hist')) return;
+    if (!rows.length) { $('#hist').innerHTML = dimBlock('No changes yet', 'Edits made from now on will be listed here with who made them.'); return; }
+    $('#hist').innerHTML = '<div class="tbl-wrap"><table><thead><tr><th>When</th><th>Who</th><th>What</th><th>Change</th></tr></thead><tbody>' +
+      rows.map(r => '<tr><td>' + esc(new Date(r.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })) + '</td><td>' + esc(r.by_email || 'System') + '</td><td>' + esc(histLabel(r)) + '</td><td>' + esc(histChange(r)) + '</td></tr>').join('') +
+      '</tbody></table></div>';
+  } catch (e) { console.error(e); if ($('#hist')) $('#hist').innerHTML = dimBlock('Could not load history', 'Try Refresh in a moment.'); }
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+async function boot() {
+  renderAll();
+  if (!window.claude || !window.claude.use) { state.dbState = 'missing'; renderAll(); return; }
+  let db = null, user = null;
+  try { db = await claude.use('db'); } catch (e) {}
+  try { user = await claude.use('user'); } catch (e) {}
+  if (!db) { state.dbState = 'missing'; renderAll(); return; }
+  state.db = db; state.dbState = 'ready';
+  try { if (user) { state.uid = await user.id(); const cw = await user.can('data.write'); state.readOnly = cw === false; } } catch (e) {}
+  const err = e => { console.error(e); if (e && e.code === 'revoked') { state.dbState = 'missing'; renderAll(); } };
+  db.collection('projects').onSnapshot(snap => { state.projects = snap.docs.map(d => Object.assign({}, d.data(), { id: d.id })); state.loaded.p = true; scheduleRender(); }, err);
+  db.collection('capital').onSnapshot(snap => { state.capital = snap.docs.map(d => Object.assign({}, d.data(), { id: d.id })); state.loaded.c = true; scheduleRender(); }, err);
+  db.doc('settings/main').onSnapshot(snap => { state.settings = snap.exists ? Object.assign({}, snap.data()) : {}; state.loaded.s = true; scheduleRender(); }, err);
+  renderAll();
+}
+boot();
+})();
+
+</script>
+
+</body>
+</html>
